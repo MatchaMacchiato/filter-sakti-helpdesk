@@ -27,7 +27,7 @@ import {
 
 interface DailyProgressPageProps {
   adminData: AdminData[];
-  HelpdeskData: HelpdeskData[];
+  helpdeskData: HelpdeskData[];
 }
 
 const getStatusColor = (status: string) => {
@@ -99,7 +99,7 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskDailyProgressPage({ adminData, HelpdeskData }: DailyProgressPageProps) {
+export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProgressPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -112,7 +112,7 @@ export function HelpdeskDailyProgressPage({ adminData, HelpdeskData }: DailyProg
     const todayItems: HelpdeskData[] = [];
     const historyMap: Record<string, HelpdeskData[]> = {};
 
-    HelpdeskData.forEach(item => {
+    helpdeskData.forEach(item => {
       const itemDate = getWIBDateString(item.createdAt);
       if (itemDate === selectedDate) {
         todayItems.push(item);
@@ -142,7 +142,7 @@ export function HelpdeskDailyProgressPage({ adminData, HelpdeskData }: DailyProg
       historyDates: sortedDates,
       totalHistoryCount: totalHistory
     };
-  }, [HelpdeskData, selectedDate]);
+  }, [helpdeskData, selectedDate]);
 
   // Filter for search
   const filterItem = (item: HelpdeskData) => {

@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 interface AgentPageProps {
   adminData: AdminData[];
-  HelpdeskData: HelpdeskData[];
+  helpdeskData: HelpdeskData[];
   onAddHelpdesk: (data: Omit<HelpdeskData, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onDeleteHelpdesk: (id: string) => void;
   onEditHelpdesk: (data: HelpdeskData) => void;
@@ -90,7 +90,7 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskSiswaPage({ adminData, HelpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk }: AgentPageProps) {
+export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk }: AgentPageProps) {
   const [selectedInet, setSelectedInet] = useState<string>('');
   const [namaInput, setNamaInput] = useState(() => localStorage.getItem('helpdeskNamaInput') || '');
   const [formData, setFormData] = useState({
@@ -148,13 +148,13 @@ export function HelpdeskSiswaPage({ adminData, HelpdeskData, onAddHelpdesk, onDe
   // Hitung berapa inet (dari hari terpilih) yang sudah diupdate agent
   const updatedCountForDate = useMemo(() => {
     return filteredAdminByDate.filter(adminItem =>
-      HelpdeskData.some(item => item.adminDataId === adminItem.id || item.inet === adminItem.inet)
+      helpdeskData.some(item => item.adminDataId === adminItem.id || item.inet === adminItem.inet)
     ).length;
-  }, [filteredAdminByDate, HelpdeskData]);
+  }, [filteredAdminByDate, helpdeskData]);
 
   // Helper: apakah inet sudah diupdate oleh agent (kapanpun)?
   const getIsDataUpdated = (adminItem: AdminData): boolean => {
-    return HelpdeskData.some(
+    return helpdeskData.some(
       item => item.adminDataId === adminItem.id || item.inet === adminItem.inet
     );
   };

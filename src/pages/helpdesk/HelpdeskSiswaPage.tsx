@@ -163,7 +163,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
   const { groupedByDate, sortedDates, totalCount } = useMemo(() => {
     const groups: Record<string, HelpdeskData[]> = {};
 
-    HelpdeskData.forEach(item => {
+    helpdeskData.forEach(item => {
       const dateKey = getWIBDateString(item.createdAt);
       if (!groups[dateKey]) groups[dateKey] = [];
       groups[dateKey].push(item);
@@ -185,8 +185,8 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
       });
     }
 
-    return { groupedByDate: groups, sortedDates: dates, totalCount: HelpdeskData.length };
-  }, [HelpdeskData, today]);
+    return { groupedByDate: groups, sortedDates: dates, totalCount: helpdeskData.length };
+  }, [helpdeskData, today]);
 
   // Filter items within a date group
   const filterItem = (item: HelpdeskData) => {
@@ -233,7 +233,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
   const handleInetSelect = (value: string) => {
     setSelectedInet(value);
     // Cek apakah data dengan inet ini sudah ada
-    const existing = HelpdeskData.find(item => item.inet === value);
+    const existing = helpdeskData.find(item => item.inet === value);
     if (existing) {
       setExistingData(existing);
       setShowDuplicateWarning(true);
@@ -268,7 +268,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
       const selectedAdminData = adminData.find(item => item.inet === selectedInet);
       if (selectedAdminData) {
         // Cek apakah data dengan inet ini sudah ada
-        const existing = HelpdeskData.find(item => item.inet === selectedInet);
+        const existing = helpdeskData.find(item => item.inet === selectedInet);
 
         if (existing) {
           // Update data yang sudah ada
@@ -444,7 +444,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
                       {selectedInet ? (
                         <span className="flex items-center gap-2">
                           <span className="font-medium">{selectedInet}</span>
-                          {HelpdeskData.some(item => item.inet === selectedInet) && (
+                          {helpdeskData.some(item => item.inet === selectedInet) && (
                             <span className="text-xs text-yellow-600">⚠️ Sudah ada data</span>
                           )}
                         </span>
@@ -461,7 +461,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
                         <CommandEmpty>Inet tidak ditemukan.</CommandEmpty>
                         <CommandGroup>
                           {availableInet.map((item) => {
-                            const isExisting = HelpdeskData.some(h => h.inet === item.inet);
+                            const isExisting = helpdeskData.some(h => h.inet === item.inet);
                             return (
                               <CommandItem
                                 key={item.id}

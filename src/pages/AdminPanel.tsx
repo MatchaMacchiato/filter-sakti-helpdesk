@@ -5,7 +5,7 @@ import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/f
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  ShieldCheck, Users, ArrowLeft, CheckCircle, XCircle, Clock,
+  Users, ArrowLeft, CheckCircle, XCircle, Clock,
   Crown, User, Search, RefreshCw, Loader2, Shield
 } from 'lucide-react';
 

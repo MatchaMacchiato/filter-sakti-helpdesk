@@ -1,0 +1,104 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:       #F4F5F7;
+  --surface:  #FFFFFF;
+  --border:   #E2E5EA;
+  --border-2: #CDD2DA;
+
+  --text-1:   #111827;
+  --text-2:   #6B7280;
+  --text-3:   #9CA3AF;
+
+  --red:      #C0392B;
+  --red-light:#FEF2F2;
+  --red-border:#FECACA;
+
+  --green:    #166534;
+  --green-light:#F0FDF4;
+  --green-border:#BBF7D0;
+
+  /* shadcn/ui CSS variables (needed for Helpdesk Tracker components) */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 240 5.9% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 5.9% 10%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 240 5.9% 90%;
+  --ring: 240 5.9% 10%;
+  --radius: 0.625rem;
+  --sidebar-background: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--text-1);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  h1,h2,h3,h4,h5,h6 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  code, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  * {
+    box-sizing: border-box;
+    @apply border-border;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+/* Shake */
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-4px); }
+  40%,80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.35s ease-in-out; }
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin 0.8s linear infinite; }
+
+/* Drag-over */
+.drag-over {
+  border-color: #C0392B !important;
+  background-color: #FEF9F9 !important;
+}

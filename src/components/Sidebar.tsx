@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Check, AlertCircle, Loader2, X, Database, BookOpen } from 'lucide-react';
+import { Upload, Check, AlertCircle, Loader2, X, Database, BookOpen, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { OperationMode, AppStatus } from '@/types';
 import { MONTH_NAMES } from '@/types';
 import type { SheetStatus } from '@/hooks/useAppState';
@@ -233,6 +234,23 @@ export function Sidebar({
             Cara Ambil Data
           </button>
         )}
+        <Link
+          to="/"
+          style={{
+            width: '100%', height: 34, borderRadius: 8,
+            fontSize: 12, fontWeight: 600,
+            border: '1px solid #E2E5EA',
+            backgroundColor: '#F9FAFB',
+            color: '#374151',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            transition: 'all 0.15s',
+            textDecoration: 'none',
+          }}
+        >
+          <ArrowLeft style={{ width: 13, height: 13 }} />
+          Kembali ke Menu Utama
+        </Link>
         <p style={{ fontSize: 11, color: '#D1D5DB' }}>Filter Sakti · v2.1</p>
       </div>
     </motion.aside>

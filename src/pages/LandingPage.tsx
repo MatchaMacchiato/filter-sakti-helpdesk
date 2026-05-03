@@ -1,11 +1,78 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FileSpreadsheet, Headset, ArrowRight } from 'lucide-react';
+import { FileSpreadsheet, Headset, ArrowRight, LogOut, Shield, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LandingPage() {
+  const { user, logout } = useAuth();
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F4F5F7', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       
+      {/* Top Bar */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+        backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #E2E5EA',
+        padding: '0 24px', height: 52,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', fontFamily: 'Plus Jakarta Sans' }}>
+          📋 Dashboard
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* User Info */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '6px 12px', borderRadius: 8,
+            backgroundColor: '#F9FAFB', border: '1px solid #E2E5EA',
+          }}>
+            <User style={{ width: 14, height: 14, color: '#6B7280' }} />
+            <span style={{ fontSize: 12, color: '#374151', fontWeight: 500 }}>
+              {user?.displayName || user?.email}
+            </span>
+            {user?.role === 'admin' && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '2px 6px',
+                borderRadius: 4, backgroundColor: '#EDE9FE', color: '#6D28D9',
+              }}>
+                Admin
+              </span>
+            )}
+          </div>
+
+          {/* Admin Panel Link */}
+          {user?.role === 'admin' && (
+            <Link
+              to="/admin-panel"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: '1px solid #DDD6FE', backgroundColor: '#EDE9FE',
+                color: '#6D28D9', textDecoration: 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Shield style={{ width: 13, height: 13 }} /> Admin Panel
+            </Link>
+          )}
+
+          {/* Logout */}
+          <button
+            onClick={logout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+              border: '1px solid #FECACA', backgroundColor: '#FEF2F2',
+              color: '#C0392B', cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            <LogOut style={{ width: 13, height: 13 }} /> Keluar
+          </button>
+        </div>
+      </div>
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -14,7 +81,7 @@ export default function LandingPage() {
         style={{ textAlign: 'center', marginBottom: 48 }}
       >
         <h1 style={{ fontSize: 32, fontWeight: 800, color: '#111827', fontFamily: 'Plus Jakarta Sans, sans-serif', marginBottom: 8 }}>
-          Selamat Datang
+          Selamat Datang{user?.displayName ? `, ${user.displayName}` : ''}
         </h1>
         <p style={{ fontSize: 14, color: '#9CA3AF', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
           Pilih aplikasi yang ingin Anda gunakan

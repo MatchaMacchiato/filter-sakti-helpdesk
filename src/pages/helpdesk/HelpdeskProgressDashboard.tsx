@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, Trash2, Loader2
 } from 'lucide-react';
 import type { HelpdeskProgressData, Segment } from '@/types/helpdesk';
-import { SEGMENT_LIST, SEGMENT_LABELS, SEGMENT_COLORS, SOLVER_LIST } from '@/types/helpdesk';
+import { SEGMENT_LIST, SEGMENT_COLORS } from '@/types/helpdesk';
 
 interface HelpdeskProgressDashboardProps {
   progressData: HelpdeskProgressData[];

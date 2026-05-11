@@ -40,9 +40,9 @@ export function HelpdeskTable({ data, onDelete, onEdit }: HelpdeskTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>No</TableHead>
-                <TableHead>Tiket</TableHead>
-                <TableHead>Fallout</TableHead>
-                <TableHead>WONUM</TableHead>
+                <TableHead>Kendala</TableHead>
+                <TableHead>Kategori</TableHead>
+                <TableHead>Eskalasi</TableHead>
                 <TableHead>Inet</TableHead>
                 <TableHead>SC ORDER</TableHead>
                 <TableHead>STATUS BIMA</TableHead>
@@ -61,9 +61,9 @@ export function HelpdeskTable({ data, onDelete, onEdit }: HelpdeskTableProps) {
                 data.map((item, index) => (
                   <TableRow key={item.id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{item.tiket}</TableCell>
-                    <TableCell>{item.fallout}</TableCell>
-                    <TableCell>{item.wonum}</TableCell>
+                    <TableCell className="font-medium">{item.kendala}</TableCell>
+                    <TableCell>{item.kategori}</TableCell>
+                    <TableCell>{item.eskalasi}</TableCell>
                     <TableCell>{item.inet}</TableCell>
                     <TableCell>{item.scOrder}</TableCell>
                     <TableCell>

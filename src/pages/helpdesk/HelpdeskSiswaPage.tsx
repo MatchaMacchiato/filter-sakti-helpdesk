@@ -199,9 +199,9 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      item.tiket.toLowerCase().includes(term) ||
-      item.fallout.toLowerCase().includes(term) ||
-      item.wonum.toLowerCase().includes(term) ||
+      (item.kendala || '').toLowerCase().includes(term) ||
+      (item.kategori || '').toLowerCase().includes(term) ||
+      (item.eskalasi || '').toLowerCase().includes(term) ||
       item.inet.toLowerCase().includes(term) ||
       item.scOrder.toLowerCase().includes(term) ||
       item.statusBima.toLowerCase().includes(term) ||
@@ -910,28 +910,45 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-tiket">Tiket</Label>
+                <Label htmlFor="edit-kendala">Kendala</Label>
                 <Input
-                  id="edit-tiket"
-                  value={editingData.tiket}
-                  onChange={(e) => setEditingData({ ...editingData, tiket: e.target.value })}
+                  id="edit-kendala"
+                  value={editingData.kendala || ''}
+                  onChange={(e) => setEditingData({ ...editingData, kendala: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-fallout">Fallout</Label>
-                <Input
-                  id="edit-fallout"
-                  value={editingData.fallout}
-                  onChange={(e) => setEditingData({ ...editingData, fallout: e.target.value })}
-                />
+                <Label htmlFor="edit-kategori">Kategori</Label>
+                <Select
+                  value={editingData.kategori || 'Setting'}
+                  onValueChange={(value) => setEditingData({ ...editingData, kategori: value as any })}
+                >
+                  <SelectTrigger id="edit-kategori">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Setting">Setting</SelectItem>
+                    <SelectItem value="Non Setting">Non Setting</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-wonum">WONUM</Label>
-                <Input
-                  id="edit-wonum"
-                  value={editingData.wonum}
-                  onChange={(e) => setEditingData({ ...editingData, wonum: e.target.value })}
-                />
+                <Label htmlFor="edit-eskalasi">Eskalasi</Label>
+                <Select
+                  value={editingData.eskalasi || ESKALASI_OPTIONS[0]}
+                  onValueChange={(value) => setEditingData({ ...editingData, eskalasi: value })}
+                >
+                  <SelectTrigger id="edit-eskalasi">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESKALASI_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-status">STATUS BIMA</Label>

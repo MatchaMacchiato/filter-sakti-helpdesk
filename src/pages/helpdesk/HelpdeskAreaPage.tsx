@@ -2,8 +2,9 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HelpdeskTask, SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, StatusBima, getStatusLabel } from '@/types/helpdesk';
-import { MapPin, Search, CheckCircle, Clock, Ban, AlertCircle, Wrench } from 'lucide-react';
+import type { HelpdeskTask } from '@/types/helpdesk';
+import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING } from '@/types/helpdesk';
+import { MapPin, Search, CheckCircle, Clock, Ban, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface HelpdeskAreaPageProps {

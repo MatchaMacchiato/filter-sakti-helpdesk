@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
 import { getStatusLabel } from '@/types/helpdesk';
+
+interface UnifiedData {
+  id: string;
+  namaInput: string;
+  inet: string;
+  scOrder: string;
+  kendala: string;
+  kategori: string;
+  eskalasi: string;
+  statusBima: StatusBima | string;
+  createdAt: string;
+}
 import { 
   ClipboardList, 
   CheckCircle, 
@@ -78,7 +89,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   };
 
   const unifiedData = useMemo(() => {
-    const list: any[] = [];
+    const list: UnifiedData[] = [];
     helpdeskData.forEach(d => {
       list.push({
         id: d.id,
@@ -114,12 +125,12 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   const totalHelpdeskData = unifiedData.length;
   
   // Status counts
-  const compworkCount = unifiedData.filter(d => d.statusBima === 'COMPWORK').length;
-  const wapprCount = unifiedData.filter(d => d.statusBima === 'WAPPR').length;
-  const instcompCount = unifiedData.filter(d => d.statusBima === 'INSTCOMP').length;
-  const actcompCount = unifiedData.filter(d => d.statusBima === 'ACTCOMP').length;
-  const canclworkCount = unifiedData.filter(d => d.statusBima === 'CANCLWORK').length;
-  const workfailCount = unifiedData.filter(d => d.statusBima === 'WORKFAIL').length;
+  const compworkCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'COMPWORK').length;
+  const wapprCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'WAPPR').length;
+  const instcompCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'INSTCOMP').length;
+  const actcompCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'ACTCOMP').length;
+  const canclworkCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'CANCLWORK').length;
+  const workfailCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'WORKFAIL').length;
 
   const adminStats = [
     {
@@ -183,7 +194,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
     }
   ];
 
-  const filteredData = unifiedData.filter(item => 
+  const filteredData = unifiedData.filter((item: UnifiedData) => 
     (item.kendala || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.kategori || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.eskalasi || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -193,11 +204,11 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   );
 
   // Leaderboard: hitung jumlah pekerjaan per agent (semua status), case-insensitive
-  const leaderboardMap = unifiedData.reduce<Record<string, { displayName: string; count: number; statusBreakdown: Record<string, number> }>>((acc, item) => {
+  const leaderboardMap = unifiedData.reduce<Record<string, { displayName: string; count: number; statusBreakdown: Record<string, number> }>>((acc, item: UnifiedData) => {
     const raw = item.namaInput?.trim() || 'Tidak Diketahui';
     const key = raw.toLowerCase();
     if (!acc[key]) {
-      const titleCase = raw.replace(/\b\w/g, (c) => c.toUpperCase());
+      const titleCase = raw.replace(/\b\w/g, (c: string) => c.toUpperCase());
       acc[key] = { displayName: titleCase, count: 0, statusBreakdown: {} };
     }
     acc[key].count += 1;
@@ -214,7 +225,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   const handleCopyToClipboard = () => {
     // Format data untuk copy ke spreadsheet
     const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Tanggal'];
-    const rows = filteredData.map((item, index) => [
+    const rows = filteredData.map((item: UnifiedData, index: number) => [
       index + 1,
       item.namaInput || '-',
       item.inet || '-',
@@ -226,7 +237,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
       item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : '-'
     ]);
     
-    const csvContent = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+    const csvContent = [headers.join('\t'), ...rows.map((r: any[]) => r.join('\t'))].join('\n');
     navigator.clipboard.writeText(csvContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -315,7 +326,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
             <div className="space-y-2">
               {leaderboard.map((entry) => {
                 // Dense rank: rank ditentukan dari count, bukan index
-                const rank = leaderboard.findIndex(e => e.count === entry.count) + 1;
+                const rank = leaderboard.findIndex((e: any) => e.count === entry.count) + 1;
                 const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
                 const barColor =
                   rank === 1 ? 'bg-yellow-400' :
@@ -324,7 +335,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                   'bg-primary';
                 const isTopRank = rank <= 3;
                 const isExpanded = expandedNames.has(entry.displayName);
-                const breakdown = Object.entries(entry.statusBreakdown).sort((a, b) => b[1] - a[1]);
+                const breakdown = Object.entries(entry.statusBreakdown as Record<string, number>).sort((a, b) => b[1] - a[1]);
                 return (
                   <div key={entry.displayName} className="border rounded-lg overflow-hidden">
                     {/* Row utama — klik untuk expand */}
@@ -372,7 +383,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                                 }`}
                               >
                                 {status}
-                                <span className="font-bold">{cnt}</span>
+                                <span className="font-bold">{cnt as React.ReactNode}</span>
                               </span>
                             );
                           })}
@@ -480,7 +491,6 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                     <TableHead>Nama</TableHead>
                     <TableHead>Inet</TableHead>
                     <TableHead>SC ORDER</TableHead>
-                    <TableHead>Tiket</TableHead>
                     <TableHead>Kendala</TableHead>
                     <TableHead>Kategori</TableHead>
                     <TableHead>Eskalasi</TableHead>
@@ -496,13 +506,12 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredData.map((item, index) => (
+                    filteredData.map((item: UnifiedData, index: number) => (
                       <TableRow key={item.id}>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell className="font-medium text-primary">{item.namaInput || '-'}</TableCell>
                         <TableCell className="font-medium">{item.inet}</TableCell>
                         <TableCell>{item.scOrder}</TableCell>
-                        <TableCell>{item.tiket}</TableCell>
                         <TableCell>{item.kendala}</TableCell>
                         <TableCell>{item.kategori}</TableCell>
                         <TableCell>{item.eskalasi}</TableCell>
@@ -511,7 +520,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                             {item.statusBima}
                           </Badge>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            {getStatusLabel(item.statusBima)}
+                            {getStatusLabel(item.statusBima as StatusBima)}
                           </div>
                         </TableCell>
                         <TableCell>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : '-'}</TableCell>

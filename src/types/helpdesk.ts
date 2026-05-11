@@ -123,3 +123,38 @@ export interface HelpdeskProgressData {
   batchId: string;
   createdAt: string;
 }
+
+// Task dari Filter Sakti yang perlu dikerjakan solver
+export type TaskStatus = 'pending' | 'completed';
+
+export interface HelpdeskTask {
+  id: string;
+  // Data dari Filter Sakti
+  dateCreated: string;
+  workorder: string;
+  scOrder: string;
+  serviceNo: string;
+  crmOrderType: string;
+  filterStatus: string;
+  address: string;
+  customerName: string;
+  workzone: string;
+  bookingDate: string;
+  contactNumber: string;
+  mitra: string;
+  // Assignment
+  segment: Segment;
+  filterMode: string;
+  batchId: string;
+  importedBy: string;
+  importedAt: string;
+  // Solver progress
+  solver: string;
+  tiket: string;
+  fallout: string;
+  wonum: string;
+  statusBima: StatusBima | '';
+  taskStatus: TaskStatus;
+  updatedBy: string;
+  updatedAt: string;
+}

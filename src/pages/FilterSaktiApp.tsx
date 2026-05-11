@@ -77,29 +77,53 @@ export default function FilterSaktiApp() {
             rowCount={showResults ? processedData!.length : undefined}
           />
 
-          {/* Send to Helpdesk */}
+          {/* Send to Helpdesk with Segment Selection */}
           {showResults && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }}>
-              <button
-                onClick={() => {
-                  localStorage.setItem('filterSaktiExport', JSON.stringify({ data: processedData, mode }));
-                  navigate('/helpdesk/bulk-input');
-                }}
-                style={{
-                  width: '100%', height: 44, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  fontSize: 13, fontWeight: 600,
-                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                  color: '#FFFFFF', border: 'none',
-                  cursor: 'pointer', transition: 'all 0.15s',
-                  boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-              >
-                <Send style={{ width: 16, height: 16 }} />
-                Kirim ke Helpdesk Tracker ({processedData!.length} data)
-              </button>
+              <div style={{
+                backgroundColor: '#FFFFFF', borderRadius: 10, padding: 16,
+                border: '1px solid #E2E5EA', display: 'flex', flexDirection: 'column', gap: 12,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Send style={{ width: 16, height: 16, color: '#667eea' }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>
+                    Kirim ke Helpdesk Tracker ({processedData!.length} data)
+                  </span>
+                </div>
+                <p style={{ fontSize: 11, color: '#9CA3AF' }}>
+                  Pilih segmen tujuan untuk mengirim data hasil filter ke halaman Input Progres Helpdesk.
+                </p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[
+                    { seg: 'JAKTIM', label: 'Jakarta Timur', bg: '#EEF2FF', color: '#4338CA', border: '#C7D2FE' },
+                    { seg: 'JAKSEL', label: 'Jakarta Selatan', bg: '#FEF3C7', color: '#92400E', border: '#FDE68A' },
+                    { seg: 'JAKPUS', label: 'Jakarta Pusat', bg: '#DCFCE7', color: '#166534', border: '#BBF7D0' },
+                  ].map(s => (
+                    <button
+                      key={s.seg}
+                      onClick={() => {
+                        localStorage.setItem('filterSaktiExport', JSON.stringify({
+                          data: processedData, mode, segment: s.seg,
+                        }));
+                        navigate('/helpdesk/input');
+                      }}
+                      style={{
+                        flex: 1, height: 44, borderRadius: 8,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 700,
+                        backgroundColor: s.bg, color: s.color,
+                        border: `1px solid ${s.border}`,
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                    >
+                      <span>{s.seg}</span>
+                      <span style={{ fontSize: 9, fontWeight: 500, opacity: 0.7 }}>{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           )}
 

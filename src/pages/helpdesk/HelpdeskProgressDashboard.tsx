@@ -7,13 +7,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   BarChart3, MapPin, Search, Users, Package, Calendar,
-  ChevronDown, ChevronUp, Trash2, Loader2
+  ChevronDown, ChevronUp, Trash2, Loader2, CheckCircle, AlertTriangle
 } from 'lucide-react';
-import type { HelpdeskProgressData, Segment } from '@/types/helpdesk';
+import type { HelpdeskTask, Segment } from '@/types/helpdesk';
 import { SEGMENT_LIST, SEGMENT_COLORS } from '@/types/helpdesk';
 
 interface HelpdeskProgressDashboardProps {
-  progressData: HelpdeskProgressData[];
+  progressData: HelpdeskTask[];
   onDeleteBatch: (batchId: string) => Promise<void>;
 }
 
@@ -33,39 +33,46 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
   const [search, setSearch] = useState('');
   const [filterSegment, setFilterSegment] = useState<Segment | 'all'>('all');
   const [filterSolver, setFilterSolver] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed'>('all');
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [deletingBatch, setDeletingBatch] = useState<string | null>(null);
 
-  // Stats per segment
-  const segmentStats = useMemo(() => {
-    const stats: Record<string, number> = { JAKTIM: 0, JAKSEL: 0, JAKPUS: 0 };
-    progressData.forEach(d => { stats[d.segment] = (stats[d.segment] || 0) + 1; });
-    return stats;
+  // Stats
+  const stats = useMemo(() => {
+    const segStats: Record<string, number> = { JAKTIM: 0, JAKSEL: 0, JAKPUS: 0 };
+    let pending = 0, completed = 0;
+    progressData.forEach(d => {
+      segStats[d.segment] = (segStats[d.segment] || 0) + 1;
+      if (d.taskStatus === 'completed') completed++; else pending++;
+    });
+    return { segments: segStats, pending, completed, total: progressData.length };
   }, [progressData]);
 
   // Unique solvers that have data
   const activeSolvers = useMemo(() => {
-    return [...new Set(progressData.map(d => d.solver))].sort();
+    return [...new Set(progressData.filter(d => d.solver).map(d => d.solver))].sort();
   }, [progressData]);
 
   // Group by batch
   const batches = useMemo(() => {
-    const map = new Map<string, { items: HelpdeskProgressData[]; segment: Segment; solver: string; createdAt: string; filterMode: string; inputBy: string }>();
+    const map = new Map<string, {
+      items: HelpdeskTask[]; segment: Segment; solver: string;
+      importedAt: string; filterMode: string; importedBy: string;
+      completedCount: number;
+    }>();
     progressData.forEach(d => {
       if (!map.has(d.batchId)) {
         map.set(d.batchId, {
-          items: [],
-          segment: d.segment,
-          solver: d.solver,
-          createdAt: d.createdAt,
-          filterMode: d.filterMode,
-          inputBy: d.inputBy,
+          items: [], segment: d.segment, solver: d.solver || '—',
+          importedAt: d.importedAt, filterMode: d.filterMode,
+          importedBy: d.importedBy, completedCount: 0,
         });
       }
-      map.get(d.batchId)!.items.push(d);
+      const batch = map.get(d.batchId)!;
+      batch.items.push(d);
+      if (d.taskStatus === 'completed') batch.completedCount++;
     });
-    // Sort by date desc
-    return [...map.entries()].sort((a, b) => b[1].createdAt.localeCompare(a[1].createdAt));
+    return [...map.entries()].sort((a, b) => b[1].importedAt.localeCompare(a[1].importedAt));
   }, [progressData]);
 
   // Filtered batches
@@ -73,6 +80,11 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
     return batches.filter(([, batch]) => {
       if (filterSegment !== 'all' && batch.segment !== filterSegment) return false;
       if (filterSolver !== 'all' && batch.solver !== filterSolver) return false;
+      if (filterStatus !== 'all') {
+        const allCompleted = batch.completedCount === batch.items.length;
+        if (filterStatus === 'completed' && !allCompleted) return false;
+        if (filterStatus === 'pending' && allCompleted) return false;
+      }
       if (search) {
         const term = search.toLowerCase();
         const matchItems = batch.items.some(item =>
@@ -85,7 +97,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
       }
       return true;
     });
-  }, [batches, filterSegment, filterSolver, search]);
+  }, [batches, filterSegment, filterSolver, filterStatus, search]);
 
   const toggleBatch = (batchId: string) => {
     setExpandedBatches(prev => {
@@ -112,23 +124,37 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
         <div>
           <h1 className="text-3xl font-bold">Dashboard Progress</h1>
           <p className="text-sm text-muted-foreground">
-            Data keseluruhan dari semua segmen
+            Monitoring data keseluruhan yang sudah diupdate oleh solver
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Package className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold">Total Data</p>
-                <p className="text-2xl font-bold">{progressData.length}</p>
-              </div>
+          <CardContent className="py-3 px-4 flex items-center gap-3">
+            <Package className="w-5 h-5 text-blue-500" />
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">Total</p>
+              <p className="text-xl font-bold">{stats.total}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-3 px-4 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">Pending</p>
+              <p className="text-xl font-bold">{stats.pending}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="py-3 px-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">Done</p>
+              <p className="text-xl font-bold">{stats.completed}</p>
             </div>
           </CardContent>
         </Card>
@@ -136,16 +162,11 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
           const colors = SEGMENT_COLORS[seg];
           return (
             <Card key={seg}>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: colors.bg }}>
-                    <MapPin className="w-5 h-5" style={{ color: colors.text }} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-semibold">{seg}</p>
-                    <p className="text-2xl font-bold">{segmentStats[seg] || 0}</p>
-                  </div>
+              <CardContent className="py-3 px-4 flex items-center gap-3">
+                <MapPin className="w-5 h-5" style={{ color: colors.text }} />
+                <div>
+                  <p className="text-[10px] text-muted-foreground font-semibold">{seg}</p>
+                  <p className="text-xl font-bold">{stats.segments[seg] || 0}</p>
                 </div>
               </CardContent>
             </Card>
@@ -165,7 +186,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
           />
         </div>
         <Select value={filterSegment} onValueChange={v => setFilterSegment(v as Segment | 'all')}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Segmen" />
           </SelectTrigger>
           <SelectContent>
@@ -176,7 +197,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
           </SelectContent>
         </Select>
         <Select value={filterSolver} onValueChange={setFilterSolver}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Solver" />
           </SelectTrigger>
           <SelectContent>
@@ -184,6 +205,16 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
             {activeSolvers.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={v => setFilterStatus(v as 'all' | 'pending' | 'completed')}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Status</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -195,7 +226,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
             <Package className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
             <h3 className="text-lg font-semibold mb-2">Belum Ada Data Progress</h3>
             <p className="text-muted-foreground text-sm">
-              Data akan muncul setelah dikirim dari halaman Bulk Input.
+              Data akan muncul setelah solver mengupdate task dari Input Progres.
             </p>
           </CardContent>
         </Card>
@@ -204,6 +235,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
           {filteredBatches.map(([batchId, batch]) => {
             const isExpanded = expandedBatches.has(batchId);
             const colors = SEGMENT_COLORS[batch.segment];
+            const progress = Math.round((batch.completedCount / batch.items.length) * 100);
 
             return (
               <Card key={batchId} className="overflow-hidden">
@@ -222,15 +254,20 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
                     <Badge variant="outline" className="text-xs">{batch.filterMode}</Badge>
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {getWIBDateString(batch.createdAt)}
+                      {getWIBDateString(batch.importedAt)}
                     </span>
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      {batch.inputBy || '-'}
+                      {batch.importedBy || '-'}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{batch.items.length} data</Badge>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      </div>
+                      <span className="text-xs text-muted-foreground">{batch.completedCount}/{batch.items.length}</span>
+                    </div>
                     <Button
                       variant="ghost" size="sm"
                       onClick={e => { e.stopPropagation(); handleDeleteBatch(batchId); }}
@@ -255,21 +292,39 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
                             <TableHead>Workorder</TableHead>
                             <TableHead>SC Order</TableHead>
                             <TableHead>Service No</TableHead>
-                            <TableHead>Status</TableHead>
                             <TableHead>Customer</TableHead>
-                            <TableHead>Workzone</TableHead>
+                            <TableHead>Solver</TableHead>
+                            <TableHead>Status BIMA</TableHead>
+                            <TableHead>Task</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {batch.items.map((item, idx) => (
-                            <TableRow key={item.id}>
+                            <TableRow key={item.id} className={item.taskStatus === 'completed' ? 'bg-green-50/50' : ''}>
                               <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="font-mono text-xs">{item.workorder}</TableCell>
                               <TableCell className="font-mono text-xs">{item.scOrder}</TableCell>
                               <TableCell className="font-mono text-xs">{item.serviceNo}</TableCell>
-                              <TableCell><Badge variant="outline" className="text-xs">{item.status}</Badge></TableCell>
                               <TableCell className="text-xs max-w-[150px] truncate">{item.customerName}</TableCell>
-                              <TableCell className="text-xs">{item.workzone}</TableCell>
+                              <TableCell className="text-xs font-medium">
+                                {item.solver ? item.solver.replace('HD ISH - ', '').replace('HD REGULER - ', '') : '—'}
+                              </TableCell>
+                              <TableCell>
+                                {item.statusBima
+                                  ? <Badge variant="outline" className="text-xs">{item.statusBima}</Badge>
+                                  : <span className="text-muted-foreground text-xs">—</span>
+                                }
+                              </TableCell>
+                              <TableCell>
+                                {item.taskStatus === 'completed'
+                                  ? <Badge className="bg-green-100 text-green-700 border-green-300 text-[10px]">
+                                      <CheckCircle className="w-3 h-3 mr-1" />Done
+                                    </Badge>
+                                  : <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px]">
+                                      Pending
+                                    </Badge>
+                                }
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>

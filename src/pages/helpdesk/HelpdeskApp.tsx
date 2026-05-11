@@ -8,9 +8,8 @@ import { HelpdeskDashboard } from '@/pages/helpdesk/HelpdeskDashboard';
 import { HelpdeskAdminPage } from '@/pages/helpdesk/HelpdeskAdminPage';
 import { HelpdeskSiswaPage } from '@/pages/helpdesk/HelpdeskSiswaPage';
 import { HelpdeskDailyProgressPage } from '@/pages/helpdesk/HelpdeskDailyProgressPage';
-import { HelpdeskBulkInputPage } from '@/pages/helpdesk/HelpdeskBulkInputPage';
 import { HelpdeskProgressDashboard } from '@/pages/helpdesk/HelpdeskProgressDashboard';
-import type { AdminData, HelpdeskData, HelpdeskProgressData } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
@@ -18,7 +17,7 @@ export function HelpdeskApp() {
   const { user } = useAuth();
   const [adminData, setAdminData] = useState<AdminData[]>([]);
   const [helpdeskData, setHelpdeskData] = useState<HelpdeskData[]>([]);
-  const [progressData, setProgressData] = useState<HelpdeskProgressData[]>([]);
+  const [tasks, setTasks] = useState<HelpdeskTask[]>([]);
 
   // Listen to Firestore real-time updates for AdminData
   useEffect(() => {
@@ -54,18 +53,18 @@ export function HelpdeskApp() {
     return () => unsubscribe();
   }, []);
 
-  // Listen to Firestore real-time updates for HelpdeskProgressData
+  // Listen to Firestore real-time updates for HelpdeskTasks
   useEffect(() => {
-    const q = query(collection(db, 'helpdeskProgress'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'helpdeskTasks'), orderBy('importedAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(d => ({
         id: d.id,
         ...d.data()
-      })) as HelpdeskProgressData[];
-      setProgressData(data);
+      })) as HelpdeskTask[];
+      setTasks(data);
     }, (error) => {
-      console.error("Error fetching progressData:", error);
-      toast.error("Gagal sinkronisasi data Progress");
+      console.error("Error fetching tasks:", error);
+      toast.error("Gagal sinkronisasi data Task");
     });
 
     return () => unsubscribe();
@@ -137,16 +136,15 @@ export function HelpdeskApp() {
     }
   };
 
-  // Handler untuk Bulk Input Progress
-  const handleBulkAdd = async (items: Omit<HelpdeskProgressData, 'id'>[]) => {
+  // Handler untuk Import Tasks dari Filter Sakti
+  const handleImportTasks = async (items: Omit<HelpdeskTask, 'id'>[]) => {
     try {
-      // Add inputBy from current user
       const batch = writeBatch(db);
       items.forEach(item => {
-        const ref = doc(collection(db, 'helpdeskProgress'));
+        const ref = doc(collection(db, 'helpdeskTasks'));
         batch.set(ref, {
           ...item,
-          inputBy: user?.email || user?.displayName || 'unknown',
+          importedBy: user?.email || user?.displayName || 'unknown',
         });
       });
       await batch.commit();
@@ -156,15 +154,29 @@ export function HelpdeskApp() {
     }
   };
 
+  // Handler untuk Update Task
+  const handleUpdateTask = async (task: HelpdeskTask) => {
+    try {
+      const { id, ...dataToUpdate } = task;
+      await updateDoc(doc(db, 'helpdeskTasks', id), {
+        ...dataToUpdate,
+        updatedBy: user?.email || user?.displayName || 'unknown',
+      });
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
   // Handler untuk Delete Batch
   const handleDeleteBatch = async (batchId: string) => {
     try {
-      const q = query(collection(db, 'helpdeskProgress'), where('batchId', '==', batchId));
+      const q = query(collection(db, 'helpdeskTasks'), where('batchId', '==', batchId));
       const snapshot = await getDocs(q);
       const batch = writeBatch(db);
       snapshot.docs.forEach(d => batch.delete(d.ref));
       await batch.commit();
-      toast.success(`Batch berhasil dihapus (${snapshot.size} data)`);
+      toast.success(`Batch berhasil dihapus (${snapshot.size} task)`);
     } catch (error) {
       console.error(error);
       toast.error('Gagal menghapus batch');
@@ -195,6 +207,10 @@ export function HelpdeskApp() {
                 onAddHelpdesk={handleAddHelpdesk}
                 onDeleteHelpdesk={handleDeleteHelpdesk}
                 onEditHelpdesk={handleEditHelpdesk}
+                tasks={tasks}
+                onImportTasks={handleImportTasks}
+                onUpdateTask={handleUpdateTask}
+                onDeleteBatch={handleDeleteBatch}
               />
             } 
           />
@@ -208,18 +224,10 @@ export function HelpdeskApp() {
             } 
           />
           <Route 
-            path="/bulk-input" 
-            element={
-              <HelpdeskBulkInputPage 
-                onBulkAdd={handleBulkAdd}
-              />
-            } 
-          />
-          <Route 
             path="/progress-dashboard" 
             element={
               <HelpdeskProgressDashboard 
-                progressData={progressData}
+                progressData={tasks}
                 onDeleteBatch={handleDeleteBatch}
               />
             } 

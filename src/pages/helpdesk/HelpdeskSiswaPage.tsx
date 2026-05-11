@@ -8,11 +8,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { AdminData, HelpdeskData } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { STATUS_BIMA_OPTIONS, getStatusLabel } from '@/types/helpdesk';
-import { PlusCircle, Trash2, Edit, ClipboardList, Search, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Wifi, CalendarDays, CalendarCheck, Clock, Copy, Check, ChevronsUpDown } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, ClipboardList, Search, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Wifi, CalendarDays, CalendarCheck, Clock, Copy, Check, ChevronsUpDown, ListFilter, FileInput } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FilterTaskView } from '@/components/helpdesk/FilterTaskView';
 
 interface AgentPageProps {
   adminData: AdminData[];
@@ -20,6 +21,11 @@ interface AgentPageProps {
   onAddHelpdesk: (data: Omit<HelpdeskData, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onDeleteHelpdesk: (id: string) => void;
   onEditHelpdesk: (data: HelpdeskData) => void;
+  // Task props
+  tasks: HelpdeskTask[];
+  onImportTasks: (tasks: Omit<HelpdeskTask, 'id'>[]) => Promise<void>;
+  onUpdateTask: (task: HelpdeskTask) => Promise<void>;
+  onDeleteBatch: (batchId: string) => Promise<void>;
 }
 
 const getStatusColor = (status: string) => {
@@ -90,7 +96,8 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk }: AgentPageProps) {
+export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk, tasks, onImportTasks, onUpdateTask, onDeleteBatch }: AgentPageProps) {
+  const [activeTab, setActiveTab] = useState<'tasks' | 'manual'>('tasks');
   const [selectedInet, setSelectedInet] = useState<string>('');
   const [namaInput, setNamaInput] = useState(() => localStorage.getItem('helpdeskNamaInput') || '');
   const [formData, setFormData] = useState({
@@ -325,7 +332,44 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
         <h1 className="text-3xl font-bold">Input Progres</h1>
       </div>
 
-      {/* Daftar Inet yang tersedia - Minimal & Elegant */}
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'tasks' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <ListFilter className="w-4 h-4" /> Task dari Filter
+          {tasks.filter(t => t.taskStatus === 'pending').length > 0 && (
+            <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
+              {tasks.filter(t => t.taskStatus === 'pending').length}
+            </Badge>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('manual')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'manual' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <FileInput className="w-4 h-4" /> Input Manual
+        </button>
+      </div>
+
+      {/* Tab: Task dari Filter */}
+      {activeTab === 'tasks' && (
+        <FilterTaskView
+          tasks={tasks}
+          onImportTasks={onImportTasks}
+          onUpdateTask={onUpdateTask}
+          onDeleteBatch={onDeleteBatch}
+        />
+      )}
+
+      {/* Tab: Input Manual (existing content) */}
+      {activeTab === 'manual' && (
+        <>
       <Card className="border-green-200">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-2">
@@ -901,6 +945,8 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
           )}
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 }

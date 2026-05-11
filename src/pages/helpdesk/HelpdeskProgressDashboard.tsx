@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,6 +106,24 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
       return next;
     });
   };
+
+  useEffect(() => {
+    if (search.trim()) {
+      const term = search.toLowerCase();
+      const matchedBatchIds = batches
+        .filter(([, batch]) => {
+          return batch.items.some(item =>
+            item.workorder.toLowerCase().includes(term) ||
+            item.scOrder.toLowerCase().includes(term) ||
+            item.serviceNo.toLowerCase().includes(term) ||
+            item.customerName.toLowerCase().includes(term)
+          ) || batch.solver.toLowerCase().includes(term);
+        })
+        .map(([batchId]) => batchId);
+      
+      setExpandedBatches(new Set(matchedBatchIds));
+    }
+  }, [search, batches]);
 
   const handleDeleteBatch = async (batchId: string) => {
     setDeletingBatch(batchId);
@@ -236,6 +254,14 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
             const isExpanded = expandedBatches.has(batchId);
             const colors = SEGMENT_COLORS[batch.segment];
             const progress = Math.round((batch.completedCount / batch.items.length) * 100);
+            
+            const displayItems = search ? batch.items.filter(item => 
+              item.workorder.toLowerCase().includes(search.toLowerCase()) ||
+              item.scOrder.toLowerCase().includes(search.toLowerCase()) ||
+              item.serviceNo.toLowerCase().includes(search.toLowerCase()) ||
+              item.customerName.toLowerCase().includes(search.toLowerCase()) ||
+              batch.solver.toLowerCase().includes(search.toLowerCase())
+            ) : batch.items;
 
             return (
               <Card key={batchId} className="overflow-hidden">
@@ -299,7 +325,7 @@ export function HelpdeskProgressDashboard({ progressData, onDeleteBatch }: Helpd
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {batch.items.map((item, idx) => (
+                          {displayItems.map((item, idx) => (
                             <TableRow key={item.id} className={item.taskStatus === 'completed' ? 'bg-green-50/50' : ''}>
                               <TableCell className="text-muted-foreground">{idx + 1}</TableCell>
                               <TableCell className="font-mono text-xs">{item.workorder}</TableCell>

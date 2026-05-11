@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { AdminData, HelpdeskData } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { getStatusLabel } from '@/types/helpdesk';
 import {
   CalendarDays,
@@ -28,6 +28,7 @@ import {
 interface DailyProgressPageProps {
   adminData: AdminData[];
   helpdeskData: HelpdeskData[];
+  tasks: HelpdeskTask[];
 }
 
 const getStatusColor = (status: string) => {
@@ -99,7 +100,7 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProgressPageProps) {
+export function HelpdeskDailyProgressPage({ adminData, helpdeskData, tasks }: DailyProgressPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
@@ -107,12 +108,45 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
 
   const today = getTodayWIB();
 
+  const unifiedData = useMemo(() => {
+    const list: any[] = [];
+    helpdeskData.forEach(d => {
+      list.push({
+        id: d.id,
+        namaInput: d.namaInput,
+        inet: d.inet,
+        scOrder: d.scOrder,
+        kendala: d.kendala,
+        kategori: d.kategori,
+        eskalasi: d.eskalasi,
+        statusBima: d.statusBima,
+        createdAt: d.createdAt
+      });
+    });
+    tasks.forEach(t => {
+      if (t.statusBima) {
+        list.push({
+          id: t.id,
+          namaInput: t.solver,
+          inet: t.serviceNo,
+          scOrder: t.scOrder,
+          kendala: t.kendala,
+          kategori: t.kategori,
+          eskalasi: t.eskalasi,
+          statusBima: t.statusBima,
+          createdAt: t.updatedAt || t.importedAt
+        });
+      }
+    });
+    return list;
+  }, [helpdeskData, tasks]);
+
   // Split data: today vs previous days
   const { todayData, historyGrouped, historyDates, totalHistoryCount } = useMemo(() => {
-    const todayItems: HelpdeskData[] = [];
-    const historyMap: Record<string, HelpdeskData[]> = {};
+    const todayItems: any[] = [];
+    const historyMap: Record<string, any[]> = {};
 
-    helpdeskData.forEach(item => {
+    unifiedData.forEach(item => {
       const itemDate = getWIBDateString(item.createdAt);
       if (itemDate === selectedDate) {
         todayItems.push(item);
@@ -142,19 +176,19 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
       historyDates: sortedDates,
       totalHistoryCount: totalHistory
     };
-  }, [helpdeskData, selectedDate]);
+  }, [unifiedData, selectedDate]);
 
   // Filter for search
-  const filterItem = (item: HelpdeskData) => {
+  const filterItem = (item: any) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
-      item.tiket.toLowerCase().includes(term) ||
-      item.fallout.toLowerCase().includes(term) ||
-      item.wonum.toLowerCase().includes(term) ||
-      item.inet.toLowerCase().includes(term) ||
-      item.scOrder.toLowerCase().includes(term) ||
-      item.statusBima.toLowerCase().includes(term)
+      (item.kendala || '').toLowerCase().includes(term) ||
+      (item.kategori || '').toLowerCase().includes(term) ||
+      (item.eskalasi || '').toLowerCase().includes(term) ||
+      (item.inet || '').toLowerCase().includes(term) ||
+      (item.scOrder || '').toLowerCase().includes(term) ||
+      (item.statusBima || '').toLowerCase().includes(term)
     );
   };
 
@@ -165,16 +199,16 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
   };
 
   const handleCopyToday = () => {
-    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Tiket', 'Fallout', 'WONUM', 'STATUS BIMA', 'Jam'];
+    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Jam'];
     const rows = filteredTodayData.map((item, index) => [
       index + 1,
       item.namaInput || '-',
-      item.inet,
-      item.scOrder,
-      item.tiket,
-      item.fallout,
-      item.wonum,
-      item.statusBima,
+      item.inet || '-',
+      item.scOrder || '-',
+      item.kendala || '-',
+      item.kategori || '-',
+      item.eskalasi || '-',
+      item.statusBima || '-',
       formatTimeWIB(item.createdAt)
     ]);
     const csvContent = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
@@ -185,16 +219,16 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
 
   const handleCopyHistory = (dateKey: string) => {
     const items = historyGrouped[dateKey] || [];
-    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Tiket', 'Fallout', 'WONUM', 'STATUS BIMA', 'Tanggal', 'Jam'];
+    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Tanggal', 'Jam'];
     const rows = items.map((item, index) => [
       index + 1,
       item.namaInput || '-',
-      item.inet,
-      item.scOrder,
-      item.tiket,
-      item.fallout,
-      item.wonum,
-      item.statusBima,
+      item.inet || '-',
+      item.scOrder || '-',
+      item.kendala || '-',
+      item.kategori || '-',
+      item.eskalasi || '-',
+      item.statusBima || '-',
       getWIBDateString(item.createdAt),
       formatTimeWIB(item.createdAt)
     ]);
@@ -410,9 +444,9 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
                   <TableHead className="w-[120px]">Nama</TableHead>
                   <TableHead className="w-[110px]">Inet</TableHead>
                   <TableHead className="w-[150px]">SC ORDER</TableHead>
-                  <TableHead className="w-[100px]">Tiket</TableHead>
-                  <TableHead className="w-[140px]">Fallout</TableHead>
-                  <TableHead className="w-[100px]">WONUM</TableHead>
+                  <TableHead className="w-[100px]">Kendala</TableHead>
+                  <TableHead className="w-[140px]">Kategori</TableHead>
+                  <TableHead className="w-[100px]">Eskalasi</TableHead>
                   <TableHead className="w-[100px]">STATUS BIMA</TableHead>
                   <TableHead className="w-[55px]">Jam</TableHead>
                 </TableRow>
@@ -437,9 +471,9 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
                       <TableCell className="font-medium text-primary truncate" title={item.namaInput || '-'}>{item.namaInput || '-'}</TableCell>
                       <TableCell className="font-medium truncate" title={item.inet}>{item.inet}</TableCell>
                       <TableCell className="truncate" title={item.scOrder}>{item.scOrder}</TableCell>
-                      <TableCell className="truncate" title={item.tiket}>{item.tiket}</TableCell>
-                      <TableCell className="truncate" title={item.fallout}>{item.fallout}</TableCell>
-                      <TableCell className="truncate" title={item.wonum}>{item.wonum}</TableCell>
+                      <TableCell className="truncate" title={item.kendala}>{item.kendala}</TableCell>
+                      <TableCell className="truncate" title={item.kategori}>{item.kategori}</TableCell>
+                      <TableCell className="truncate" title={item.eskalasi}>{item.eskalasi}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(item.statusBima)}>
                           {item.statusBima}
@@ -552,9 +586,9 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
                                 <TableHead className="w-[120px]">Nama</TableHead>
                                 <TableHead className="w-[110px]">Inet</TableHead>
                                 <TableHead className="w-[150px]">SC ORDER</TableHead>
-                                <TableHead className="w-[100px]">Tiket</TableHead>
-                                <TableHead className="w-[140px]">Fallout</TableHead>
-                                <TableHead className="w-[100px]">WONUM</TableHead>
+                                <TableHead className="w-[100px]">Kendala</TableHead>
+                                <TableHead className="w-[140px]">Kategori</TableHead>
+                                <TableHead className="w-[100px]">Eskalasi</TableHead>
                                 <TableHead className="w-[100px]">STATUS BIMA</TableHead>
                                 <TableHead className="w-[55px]">Jam</TableHead>
                               </TableRow>
@@ -566,9 +600,9 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData }: DailyProg
                                   <TableCell className="font-medium text-primary truncate" title={item.namaInput || '-'}>{item.namaInput || '-'}</TableCell>
                                   <TableCell className="font-medium truncate" title={item.inet}>{item.inet}</TableCell>
                                   <TableCell className="truncate" title={item.scOrder}>{item.scOrder}</TableCell>
-                                  <TableCell className="truncate" title={item.tiket}>{item.tiket}</TableCell>
-                                  <TableCell className="truncate" title={item.fallout}>{item.fallout}</TableCell>
-                                  <TableCell className="truncate" title={item.wonum}>{item.wonum}</TableCell>
+                                  <TableCell className="truncate" title={item.kendala}>{item.kendala}</TableCell>
+                                  <TableCell className="truncate" title={item.kategori}>{item.kategori}</TableCell>
+                                  <TableCell className="truncate" title={item.eskalasi}>{item.eskalasi}</TableCell>
                                   <TableCell>
                                     <Badge className={getStatusColor(item.statusBima)}>
                                       {item.statusBima}

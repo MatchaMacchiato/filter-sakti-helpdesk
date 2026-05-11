@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { AdminData, HelpdeskData } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { getStatusLabel } from '@/types/helpdesk';
 import { 
   ClipboardList, 
@@ -31,6 +32,7 @@ import {
 interface HelpdeskDashboardProps {
   adminData: AdminData[];
   helpdeskData: HelpdeskData[];
+  tasks: HelpdeskTask[];
 }
 
 const getStatusColor = (status: string) => {
@@ -61,7 +63,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   WORKFAIL:  { label: 'WORKFAIL',  color: 'text-gray-700',   bg: 'bg-gray-200' },
 };
 
-export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboardProps) {
+export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDashboardProps) {
   const [showViewAll, setShowViewAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
@@ -75,16 +77,49 @@ export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboard
     });
   };
 
+  const unifiedData = useMemo(() => {
+    const list: any[] = [];
+    helpdeskData.forEach(d => {
+      list.push({
+        id: d.id,
+        namaInput: d.namaInput,
+        inet: d.inet,
+        scOrder: d.scOrder,
+        kendala: d.kendala,
+        kategori: d.kategori,
+        eskalasi: d.eskalasi,
+        statusBima: d.statusBima,
+        createdAt: d.createdAt
+      });
+    });
+    tasks.forEach(t => {
+      if (t.statusBima) {
+        list.push({
+          id: t.id,
+          namaInput: t.solver,
+          inet: t.serviceNo,
+          scOrder: t.scOrder,
+          kendala: t.kendala,
+          kategori: t.kategori,
+          eskalasi: t.eskalasi,
+          statusBima: t.statusBima,
+          createdAt: t.updatedAt || t.importedAt
+        });
+      }
+    });
+    return list;
+  }, [helpdeskData, tasks]);
+
   const totalAdminData = adminData.length;
-  const totalHelpdeskData = helpdeskData.length;
+  const totalHelpdeskData = unifiedData.length;
   
   // Status counts
-  const compworkCount = helpdeskData.filter(d => d.statusBima === 'COMPWORK').length;
-  const wapprCount = helpdeskData.filter(d => d.statusBima === 'WAPPR').length;
-  const instcompCount = helpdeskData.filter(d => d.statusBima === 'INSTCOMP').length;
-  const actcompCount = helpdeskData.filter(d => d.statusBima === 'ACTCOMP').length;
-  const canclworkCount = helpdeskData.filter(d => d.statusBima === 'CANCLWORK').length;
-  const workfailCount = helpdeskData.filter(d => d.statusBima === 'WORKFAIL').length;
+  const compworkCount = unifiedData.filter(d => d.statusBima === 'COMPWORK').length;
+  const wapprCount = unifiedData.filter(d => d.statusBima === 'WAPPR').length;
+  const instcompCount = unifiedData.filter(d => d.statusBima === 'INSTCOMP').length;
+  const actcompCount = unifiedData.filter(d => d.statusBima === 'ACTCOMP').length;
+  const canclworkCount = unifiedData.filter(d => d.statusBima === 'CANCLWORK').length;
+  const workfailCount = unifiedData.filter(d => d.statusBima === 'WORKFAIL').length;
 
   const adminStats = [
     {
@@ -148,17 +183,17 @@ export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboard
     }
   ];
 
-  const filteredData = helpdeskData.filter(item => 
-    item.tiket.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.fallout.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.wonum.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.inet.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.scOrder.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.statusBima.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = unifiedData.filter(item => 
+    (item.kendala || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.kategori || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.eskalasi || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.inet || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.scOrder || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (item.statusBima || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Leaderboard: hitung jumlah pekerjaan per agent (semua status), case-insensitive
-  const leaderboardMap = helpdeskData.reduce<Record<string, { displayName: string; count: number; statusBreakdown: Record<string, number> }>>((acc, item) => {
+  const leaderboardMap = unifiedData.reduce<Record<string, { displayName: string; count: number; statusBreakdown: Record<string, number> }>>((acc, item) => {
     const raw = item.namaInput?.trim() || 'Tidak Diketahui';
     const key = raw.toLowerCase();
     if (!acc[key]) {
@@ -178,16 +213,16 @@ export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboard
 
   const handleCopyToClipboard = () => {
     // Format data untuk copy ke spreadsheet
-    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Tiket', 'Fallout', 'WONUM', 'STATUS BIMA', 'Tanggal'];
+    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Tanggal'];
     const rows = filteredData.map((item, index) => [
       index + 1,
       item.namaInput || '-',
-      item.inet,
-      item.scOrder,
-      item.tiket,
-      item.fallout,
-      item.wonum,
-      item.statusBima,
+      item.inet || '-',
+      item.scOrder || '-',
+      item.kendala || '-',
+      item.kategori || '-',
+      item.eskalasi || '-',
+      item.statusBima || '-',
       item.createdAt ? new Date(item.createdAt).toLocaleDateString('id-ID') : '-'
     ]);
     
@@ -446,8 +481,9 @@ export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboard
                     <TableHead>Inet</TableHead>
                     <TableHead>SC ORDER</TableHead>
                     <TableHead>Tiket</TableHead>
-                    <TableHead>Fallout</TableHead>
-                    <TableHead>WONUM</TableHead>
+                    <TableHead>Kendala</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Eskalasi</TableHead>
                     <TableHead>STATUS BIMA</TableHead>
                     <TableHead>Tanggal</TableHead>
                   </TableRow>
@@ -467,8 +503,9 @@ export function HelpdeskDashboard({ adminData, helpdeskData }: HelpdeskDashboard
                         <TableCell className="font-medium">{item.inet}</TableCell>
                         <TableCell>{item.scOrder}</TableCell>
                         <TableCell>{item.tiket}</TableCell>
-                        <TableCell>{item.fallout}</TableCell>
-                        <TableCell>{item.wonum}</TableCell>
+                        <TableCell>{item.kendala}</TableCell>
+                        <TableCell>{item.kategori}</TableCell>
+                        <TableCell>{item.eskalasi}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(item.statusBima)}>
                             {item.statusBima}

@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
 import {
   SOLVER_LIST, SEGMENT_LIST, SEGMENT_COLORS,
-  STATUS_BIMA_OPTIONS, getStatusLabel
+  STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS
 } from '@/types/helpdesk';
 
 interface FilterTaskViewProps {
@@ -54,9 +54,9 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
   // Edit dialog
   const [editTask, setEditTask] = useState<HelpdeskTask | null>(null);
   const [editSolver, setEditSolver] = useState('');
-  const [editTiket, setEditTiket] = useState('');
-  const [editFallout, setEditFallout] = useState('');
-  const [editWonum, setEditWonum] = useState('');
+  const [editKendala, setEditKendala] = useState('');
+  const [editKategori, setEditKategori] = useState<'Setting' | 'Non Setting' | ''>('');
+  const [editEskalasi, setEditEskalasi] = useState('');
   const [editStatusBima, setEditStatusBima] = useState<StatusBima | ''>('');
   const [saving, setSaving] = useState(false);
 
@@ -115,9 +115,9 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
           importedBy: '', // filled by HelpdeskApp
           importedAt: now,
           solver: '',
-          tiket: '',
-          fallout: '',
-          wonum: '',
+          kendala: '',
+          kategori: '' as const,
+          eskalasi: '',
           statusBima: '' as const,
           taskStatus: 'pending' as const,
           updatedBy: '',
@@ -140,9 +140,9 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
   const openEditDialog = (task: HelpdeskTask) => {
     setEditTask(task);
     setEditSolver(task.solver);
-    setEditTiket(task.tiket);
-    setEditFallout(task.fallout);
-    setEditWonum(task.wonum);
+    setEditKendala(task.kendala || '');
+    setEditKategori(task.kategori || '');
+    setEditEskalasi(task.eskalasi || '');
     setEditStatusBima(task.statusBima);
   };
 
@@ -157,11 +157,11 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
       await onUpdateTask({
         ...editTask,
         solver: editSolver,
-        tiket: editTiket,
-        fallout: editFallout,
-        wonum: editWonum,
+        kendala: editKendala,
+        kategori: editKategori,
+        eskalasi: editEskalasi,
         statusBima: editStatusBima,
-        taskStatus: editStatusBima ? 'completed' : 'pending',
+        taskStatus: (editStatusBima === 'COMPWORK' || editStatusBima === 'CANCLWORK') ? 'completed' : 'pending',
         updatedAt: new Date().toISOString(),
       });
       setEditTask(null);
@@ -421,17 +421,34 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
 
               {/* Progress Fields */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Tiket</Label>
-                  <Input value={editTiket} onChange={e => setEditTiket(e.target.value)} placeholder="Nomor tiket" />
+                <div className="space-y-2 col-span-2">
+                  <Label>Kendala</Label>
+                  <Input value={editKendala} onChange={e => setEditKendala(e.target.value)} placeholder="Masukkan kendala" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fallout</Label>
-                  <Input value={editFallout} onChange={e => setEditFallout(e.target.value)} placeholder="Fallout" />
+                  <Label>Kategori</Label>
+                  <Select value={editKategori} onValueChange={v => setEditKategori(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih kategori..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Setting">Setting</SelectItem>
+                      <SelectItem value="Non Setting">Non Setting</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>WONUM</Label>
-                  <Input value={editWonum} onChange={e => setEditWonum(e.target.value)} placeholder="WONUM" />
+                  <Label>Eskalasi</Label>
+                  <Select value={editEskalasi} onValueChange={v => setEditEskalasi(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih eskalasi..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESKALASI_OPTIONS.map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Status BIMA</Label>

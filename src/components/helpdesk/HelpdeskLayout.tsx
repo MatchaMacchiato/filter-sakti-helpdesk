@@ -8,7 +8,8 @@ import {
   X,
   Settings,
   ArrowLeft,
-  BarChart3
+  BarChart3,
+  MapPin
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -34,6 +35,7 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
     { path: '/helpdesk/input', label: 'Input Progres', icon: ClipboardList },
     { path: '/helpdesk/daily', label: 'Progres Harian', icon: CalendarDays },
     { path: '/helpdesk/progress-dashboard', label: 'Dashboard Progress', icon: BarChart3 },
+    { path: '/helpdesk/area', label: 'Area', icon: MapPin },
   ];
 
   return (

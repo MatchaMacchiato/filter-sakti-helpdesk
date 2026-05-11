@@ -15,9 +15,9 @@ export interface HelpdeskData {
   inet: string; // Copy dari admin untuk kemudahan
   scOrder: string; // Copy dari admin untuk kemudahan
   namaInput: string; // Nama penginput (Agent Helpdesk)
-  tiket: string;
-  fallout: string;
-  wonum: string;
+  kendala: string;
+  kategori: 'Setting' | 'Non Setting' | '';
+  eskalasi: string;
   statusBima: StatusBima;
   createdAt: string;
   updatedAt: string;
@@ -64,6 +64,32 @@ export const SEGMENT_COLORS: Record<Segment, { bg: string; text: string; border:
   JAKSEL: { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
   JAKPUS: { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' },
 };
+
+export const AREA_MAPPING: Record<Segment, string[]> = {
+  JAKTIM: ['CWA', 'GAN', 'JTN', 'KLD', 'KRG', 'PDK', 'PGB', 'PGG', 'PSR', 'RMG'],
+  JAKSEL: ['BIN', 'PSM', 'JAG', 'KAL', 'TBE', 'KMG', 'CPE', 'KBY'],
+  JAKPUS: ['CID', 'CPP', 'GBC', 'GBI', 'KMY']
+};
+
+export const ESKALASI_OPTIONS = [
+  'KENDALA PELANGGAN - BATAL',
+  'CABUT INPUL',
+  'ESKALASI DIT',
+  'ESKALASI BIMA',
+  'ESKALASI TSEL SLCS',
+  'ORDER SMOOA - ORBIT',
+  'ORDER SIP TRUNK/DATIN',
+  'ESKALASI DAMAN',
+  'ORDER WIFI.ID',
+  'ORDER WIFI MESH - 2nd STB',
+  'ESKALASI BES FIX',
+  'ESKALASI ASO-MARS',
+  'ESKALASI MARS',
+  'ESKALASI TSEL ALTER AAA',
+  'CABUT INPUL LOS TTI',
+  'CLOSED',
+  'TA FU AREA'
+] as const;
 
 export const SOLVER_LIST = [
   'HD ISH - DHEO',
@@ -150,9 +176,9 @@ export interface HelpdeskTask {
   importedAt: string;
   // Solver progress
   solver: string;
-  tiket: string;
-  fallout: string;
-  wonum: string;
+  kendala: string;
+  kategori: 'Setting' | 'Non Setting' | '';
+  eskalasi: string;
   statusBima: StatusBima | '';
   taskStatus: TaskStatus;
   updatedBy: string;

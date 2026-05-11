@@ -9,6 +9,7 @@ import { HelpdeskAdminPage } from '@/pages/helpdesk/HelpdeskAdminPage';
 import { HelpdeskSiswaPage } from '@/pages/helpdesk/HelpdeskSiswaPage';
 import { HelpdeskDailyProgressPage } from '@/pages/helpdesk/HelpdeskDailyProgressPage';
 import { HelpdeskProgressDashboard } from '@/pages/helpdesk/HelpdeskProgressDashboard';
+import { HelpdeskAreaPage } from '@/pages/helpdesk/HelpdeskAreaPage';
 import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -187,7 +188,7 @@ export function HelpdeskApp() {
     <>
       <HelpdeskLayout>
         <Routes>
-          <Route path="/" element={<HelpdeskDashboard adminData={adminData} helpdeskData={helpdeskData} />} />
+          <Route path="/" element={<HelpdeskDashboard adminData={adminData} helpdeskData={helpdeskData} tasks={tasks} />} />
           <Route 
             path="/admin" 
             element={
@@ -219,6 +220,7 @@ export function HelpdeskApp() {
               <HelpdeskDailyProgressPage 
                 adminData={adminData}
                 helpdeskData={helpdeskData}
+                tasks={tasks}
               />
             } 
           />
@@ -228,6 +230,14 @@ export function HelpdeskApp() {
               <HelpdeskProgressDashboard 
                 progressData={tasks}
                 onDeleteBatch={handleDeleteBatch}
+              />
+            } 
+          />
+          <Route 
+            path="/area" 
+            element={
+              <HelpdeskAreaPage 
+                tasks={tasks}
               />
             } 
           />

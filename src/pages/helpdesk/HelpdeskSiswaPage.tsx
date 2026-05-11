@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
-import { STATUS_BIMA_OPTIONS, getStatusLabel } from '@/types/helpdesk';
+import { STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS } from '@/types/helpdesk';
 import { PlusCircle, Trash2, Edit, ClipboardList, Search, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Wifi, CalendarDays, CalendarCheck, Clock, Copy, Check, ChevronsUpDown, ListFilter, FileInput } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -100,9 +100,9 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
   const [selectedInet, setSelectedInet] = useState<string>('');
   const [namaInput, setNamaInput] = useState(() => localStorage.getItem('helpdeskNamaInput') || '');
   const [formData, setFormData] = useState({
-    tiket: '',
-    fallout: '',
-    wonum: '',
+    kendala: '',
+    kategori: '' as 'Setting' | 'Non Setting' | '',
+    eskalasi: '',
     statusBima: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -215,15 +215,15 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
 
   const handleCopyDate = (dateKey: string) => {
     const items = (groupedByDate[dateKey] || []).filter(filterItem);
-    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Tiket', 'Fallout', 'WONUM', 'STATUS BIMA', 'Jam'];
+    const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Jam'];
     const rows = items.map((item, index) => [
       index + 1,
       item.namaInput || '-',
       item.inet,
       item.scOrder,
-      item.tiket,
-      item.fallout,
-      item.wonum,
+      item.kendala,
+      item.kategori,
+      item.eskalasi,
       item.statusBima,
       formatTimeWIB(item.createdAt)
     ]);
@@ -245,16 +245,16 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
       setShowDuplicateWarning(true);
       // Isi form dengan data yang sudah ada
       setFormData({
-        tiket: existing.tiket,
-        fallout: existing.fallout,
-        wonum: existing.wonum,
+        kendala: existing.kendala || '',
+        kategori: existing.kategori || '',
+        eskalasi: existing.eskalasi || '',
         statusBima: existing.statusBima
       });
       if (existing.namaInput) setNamaInput(existing.namaInput);
     } else {
       setExistingData(null);
       setShowDuplicateWarning(false);
-      setFormData({ tiket: '', fallout: '', wonum: '', statusBima: '' });
+      setFormData({ kendala: '', kategori: '', eskalasi: '', statusBima: '' });
     }
   };
 
@@ -270,7 +270,7 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
     }
     // Simpan nama ke localStorage supaya tidak perlu input ulang
     localStorage.setItem('helpdeskNamaInput', namaInput.trim());
-    if (formData.tiket && formData.fallout && formData.wonum && formData.statusBima) {
+    if (formData.kendala && formData.kategori && formData.eskalasi && formData.statusBima) {
       const selectedAdminData = adminData.find(item => item.inet === selectedInet);
       if (selectedAdminData) {
         // Cek apakah data dengan inet ini sudah ada
@@ -281,9 +281,9 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
           onEditHelpdesk({
             ...existing,
             namaInput: namaInput.trim(),
-            tiket: formData.tiket,
-            fallout: formData.fallout,
-            wonum: formData.wonum,
+            kendala: formData.kendala,
+            kategori: formData.kategori as 'Setting' | 'Non Setting' | '',
+            eskalasi: formData.eskalasi,
             statusBima: formData.statusBima as any
           });
           toast.success('Data berhasil diupdate! Data sebelumnya telah diganti.');
@@ -294,15 +294,15 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
             inet: selectedAdminData.inet,
             scOrder: selectedAdminData.scOrder,
             namaInput: namaInput.trim(),
-            tiket: formData.tiket,
-            fallout: formData.fallout,
-            wonum: formData.wonum,
+            kendala: formData.kendala,
+            kategori: formData.kategori as 'Setting' | 'Non Setting' | '',
+            eskalasi: formData.eskalasi,
             statusBima: formData.statusBima as any
           });
           toast.success('Progress Helpdesk berhasil disimpan!');
         }
 
-        setFormData({ tiket: '', fallout: '', wonum: '', statusBima: '' });
+        setFormData({ kendala: '', kategori: '', eskalasi: '', statusBima: '' });
         setSelectedInet('');
         setShowDuplicateWarning(false);
         setExistingData(null);
@@ -627,36 +627,51 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="tiket">Tiket</Label>
+                <Label htmlFor="kendala">Kendala</Label>
                 <Input
-                  id="tiket"
-                  placeholder="Masukkan nomor tiket"
-                  value={formData.tiket}
-                  onChange={(e) => setFormData({ ...formData, tiket: e.target.value })}
+                  id="kendala"
+                  placeholder="Masukkan kendala"
+                  value={formData.kendala}
+                  onChange={(e) => setFormData({ ...formData, kendala: e.target.value })}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fallout">Fallout</Label>
-                <Input
-                  id="fallout"
-                  placeholder="Masukkan fallout"
-                  value={formData.fallout}
-                  onChange={(e) => setFormData({ ...formData, fallout: e.target.value })}
+                <Label htmlFor="kategori">Kategori</Label>
+                <Select
+                  value={formData.kategori}
+                  onValueChange={(value) => setFormData({ ...formData, kategori: value as any })}
                   required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Setting">Setting</SelectItem>
+                    <SelectItem value="Non Setting">Non Setting</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="wonum">WONUM</Label>
-                <Input
-                  id="wonum"
-                  placeholder="Masukkan WONUM"
-                  value={formData.wonum}
-                  onChange={(e) => setFormData({ ...formData, wonum: e.target.value })}
+                <Label htmlFor="eskalasi">Eskalasi</Label>
+                <Select
+                  value={formData.eskalasi}
+                  onValueChange={(value) => setFormData({ ...formData, eskalasi: value })}
                   required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Eskalasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESKALASI_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -796,9 +811,9 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
                                 <TableHead className="w-[120px]">Nama</TableHead>
                                 <TableHead className="w-[110px]">Inet</TableHead>
                                 <TableHead className="w-[140px]">SC ORDER</TableHead>
-                                <TableHead className="w-[100px]">Tiket</TableHead>
-                                <TableHead className="w-[130px]">Fallout</TableHead>
-                                <TableHead className="w-[100px]">WONUM</TableHead>
+                                <TableHead className="w-[100px]">Kendala</TableHead>
+                                <TableHead className="w-[130px]">Kategori</TableHead>
+                                <TableHead className="w-[100px]">Eskalasi</TableHead>
                                 <TableHead className="w-[100px]">STATUS BIMA</TableHead>
                                 <TableHead className="w-[55px]">Jam</TableHead>
                                 <TableHead className="w-[80px]">Aksi</TableHead>
@@ -818,9 +833,9 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
                                     <TableCell className="font-medium text-primary truncate" title={item.namaInput || '-'}>{item.namaInput || '-'}</TableCell>
                                     <TableCell className="font-medium truncate" title={item.inet}>{item.inet}</TableCell>
                                     <TableCell className="truncate" title={item.scOrder}>{item.scOrder}</TableCell>
-                                    <TableCell className="truncate" title={item.tiket}>{item.tiket}</TableCell>
-                                    <TableCell className="truncate" title={item.fallout}>{item.fallout}</TableCell>
-                                    <TableCell className="truncate" title={item.wonum}>{item.wonum}</TableCell>
+                                    <TableCell className="truncate" title={item.kendala}>{item.kendala}</TableCell>
+                                    <TableCell className="truncate" title={item.kategori}>{item.kategori}</TableCell>
+                                    <TableCell className="truncate" title={item.eskalasi}>{item.eskalasi}</TableCell>
                                     <TableCell>
                                       <Badge className={getStatusColor(item.statusBima)}>
                                         {item.statusBima}

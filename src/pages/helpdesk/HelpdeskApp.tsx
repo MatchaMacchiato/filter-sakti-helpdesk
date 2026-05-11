@@ -210,7 +210,6 @@ export function HelpdeskApp() {
                 tasks={tasks}
                 onImportTasks={handleImportTasks}
                 onUpdateTask={handleUpdateTask}
-                onDeleteBatch={handleDeleteBatch}
               />
             } 
           />

@@ -25,7 +25,6 @@ interface AgentPageProps {
   tasks: HelpdeskTask[];
   onImportTasks: (tasks: Omit<HelpdeskTask, 'id'>[]) => Promise<void>;
   onUpdateTask: (task: HelpdeskTask) => Promise<void>;
-  onDeleteBatch: (batchId: string) => Promise<void>;
 }
 
 const getStatusColor = (status: string) => {
@@ -96,7 +95,7 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk, tasks, onImportTasks, onUpdateTask, onDeleteBatch }: AgentPageProps) {
+export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk, tasks, onImportTasks, onUpdateTask }: AgentPageProps) {
   const [activeTab, setActiveTab] = useState<'tasks' | 'manual'>('tasks');
   const [selectedInet, setSelectedInet] = useState<string>('');
   const [namaInput, setNamaInput] = useState(() => localStorage.getItem('helpdeskNamaInput') || '');
@@ -363,7 +362,6 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
           tasks={tasks}
           onImportTasks={onImportTasks}
           onUpdateTask={onUpdateTask}
-          onDeleteBatch={onDeleteBatch}
         />
       )}
 

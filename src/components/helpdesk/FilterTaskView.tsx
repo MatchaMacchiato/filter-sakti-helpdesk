@@ -22,7 +22,6 @@ interface FilterTaskViewProps {
   tasks: HelpdeskTask[];
   onImportTasks: (tasks: Omit<HelpdeskTask, 'id'>[]) => Promise<void>;
   onUpdateTask: (task: HelpdeskTask) => Promise<void>;
-  onDeleteBatch: (batchId: string) => Promise<void>;
 }
 
 const COL_MAP: Record<string, string> = {
@@ -40,7 +39,7 @@ const COL_MAP: Record<string, string> = {
   'Mitra': 'mitra',
 };
 
-export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteBatch }: FilterTaskViewProps) {
+export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTaskViewProps) {
   const [hasImportData, setHasImportData] = useState(false);
   const [importCount, setImportCount] = useState(0);
   const [importSegment, setImportSegment] = useState<Segment | ''>('');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, Send } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { MetricsCards } from '@/components/MetricsCards';
@@ -27,6 +28,7 @@ export default function FilterSaktiApp() {
   } = useAppState();
 
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const navigate = useNavigate();
 
   const showResults = status === 'complete' && processedData !== null;
   const showEmpty   = !mainFile && status === 'idle';
@@ -74,6 +76,32 @@ export default function FilterSaktiApp() {
             mode={mode}
             rowCount={showResults ? processedData!.length : undefined}
           />
+
+          {/* Send to Helpdesk */}
+          {showResults && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.15 }}>
+              <button
+                onClick={() => {
+                  localStorage.setItem('filterSaktiExport', JSON.stringify({ data: processedData, mode }));
+                  navigate('/helpdesk/bulk-input');
+                }}
+                style={{
+                  width: '100%', height: 44, borderRadius: 8,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  fontSize: 13, fontWeight: 600,
+                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                  color: '#FFFFFF', border: 'none',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  boxShadow: '0 4px 12px rgba(102,126,234,0.3)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+              >
+                <Send style={{ width: 16, height: 16 }} />
+                Kirim ke Helpdesk Tracker ({processedData!.length} data)
+              </button>
+            </motion.div>
+          )}
 
           {/* Empty */}
           {showEmpty && (

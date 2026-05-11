@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, orderBy, query, getDocs, where, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { HelpdeskLayout } from '@/components/helpdesk/HelpdeskLayout';
 import { HelpdeskDashboard } from '@/pages/helpdesk/HelpdeskDashboard';
 import { HelpdeskAdminPage } from '@/pages/helpdesk/HelpdeskAdminPage';
 import { HelpdeskSiswaPage } from '@/pages/helpdesk/HelpdeskSiswaPage';
 import { HelpdeskDailyProgressPage } from '@/pages/helpdesk/HelpdeskDailyProgressPage';
-import type { AdminData, HelpdeskData } from '@/types/helpdesk';
+import { HelpdeskBulkInputPage } from '@/pages/helpdesk/HelpdeskBulkInputPage';
+import { HelpdeskProgressDashboard } from '@/pages/helpdesk/HelpdeskProgressDashboard';
+import type { AdminData, HelpdeskData, HelpdeskProgressData } from '@/types/helpdesk';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
 export function HelpdeskApp() {
+  const { user } = useAuth();
   const [adminData, setAdminData] = useState<AdminData[]>([]);
   const [helpdeskData, setHelpdeskData] = useState<HelpdeskData[]>([]);
+  const [progressData, setProgressData] = useState<HelpdeskProgressData[]>([]);
 
   // Listen to Firestore real-time updates for AdminData
   useEffect(() => {
@@ -44,6 +49,23 @@ export function HelpdeskApp() {
     }, (error) => {
       console.error("Error fetching helpdeskData:", error);
       toast.error("Gagal sinkronisasi data Helpdesk");
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to Firestore real-time updates for HelpdeskProgressData
+  useEffect(() => {
+    const q = query(collection(db, 'helpdeskProgress'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      })) as HelpdeskProgressData[];
+      setProgressData(data);
+    }, (error) => {
+      console.error("Error fetching progressData:", error);
+      toast.error("Gagal sinkronisasi data Progress");
     });
 
     return () => unsubscribe();
@@ -115,6 +137,40 @@ export function HelpdeskApp() {
     }
   };
 
+  // Handler untuk Bulk Input Progress
+  const handleBulkAdd = async (items: Omit<HelpdeskProgressData, 'id'>[]) => {
+    try {
+      // Add inputBy from current user
+      const batch = writeBatch(db);
+      items.forEach(item => {
+        const ref = doc(collection(db, 'helpdeskProgress'));
+        batch.set(ref, {
+          ...item,
+          inputBy: user?.email || user?.displayName || 'unknown',
+        });
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
+  // Handler untuk Delete Batch
+  const handleDeleteBatch = async (batchId: string) => {
+    try {
+      const q = query(collection(db, 'helpdeskProgress'), where('batchId', '==', batchId));
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      toast.success(`Batch berhasil dihapus (${snapshot.size} data)`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menghapus batch');
+    }
+  };
+
   return (
     <>
       <HelpdeskLayout>
@@ -148,6 +204,23 @@ export function HelpdeskApp() {
               <HelpdeskDailyProgressPage 
                 adminData={adminData}
                 helpdeskData={helpdeskData}
+              />
+            } 
+          />
+          <Route 
+            path="/bulk-input" 
+            element={
+              <HelpdeskBulkInputPage 
+                onBulkAdd={handleBulkAdd}
+              />
+            } 
+          />
+          <Route 
+            path="/progress-dashboard" 
+            element={
+              <HelpdeskProgressDashboard 
+                progressData={progressData}
+                onDeleteBatch={handleDeleteBatch}
               />
             } 
           />

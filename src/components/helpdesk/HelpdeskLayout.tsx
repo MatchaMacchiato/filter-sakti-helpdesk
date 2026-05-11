@@ -7,7 +7,9 @@ import {
   Menu,
   X,
   Settings,
-  ArrowLeft
+  ArrowLeft,
+  Package,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -16,6 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HelpdeskLayoutProps {
   children: React.ReactNode;
@@ -24,11 +27,15 @@ interface HelpdeskLayoutProps {
 export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const mainNavItems = [
     { path: '/helpdesk', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/helpdesk/input', label: 'Input Progres', icon: ClipboardList },
     { path: '/helpdesk/daily', label: 'Progres Harian', icon: CalendarDays },
+    { path: '/helpdesk/bulk-input', label: 'Bulk Input', icon: Package },
+    { path: '/helpdesk/progress-dashboard', label: 'Dashboard Progress', icon: BarChart3 },
   ];
 
   return (
@@ -53,25 +60,27 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
           ))}
         </nav>
 
-        {/* Admin Menu di bawah dengan ikon Settings */}
-        <div className="p-4 border-t">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Settings className="w-4 h-4" />
-                Admin Settings
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <Link to="/helpdesk/admin">
-                <DropdownMenuItem className="cursor-pointer">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Mode Admin (Input Data Master)
-                </DropdownMenuItem>
-              </Link>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {/* Admin Menu di bawah dengan ikon Settings - ADMIN ONLY */}
+        {isAdmin && (
+          <div className="p-4 border-t">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-3">
+                  <Settings className="w-4 h-4" />
+                  Admin Settings
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <Link to="/helpdesk/admin">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Mode Admin (Input Data Master)
+                  </DropdownMenuItem>
+                </Link>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
         {/* Back to Landing */}
         <div className="p-4 border-t">
@@ -93,22 +102,24 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
         <div className="flex items-center justify-between p-4">
           <h1 className="text-lg font-bold text-primary">Helpdesk Tracker</h1>
           <div className="flex items-center gap-2">
-            {/* Settings untuk mobile */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Settings className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link to="/helpdesk/admin" onClick={() => setIsSidebarOpen(false)}>
-                  <DropdownMenuItem className="cursor-pointer">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Mode Admin
-                  </DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Settings untuk mobile - ADMIN ONLY */}
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Settings className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <Link to="/helpdesk/admin" onClick={() => setIsSidebarOpen(false)}>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Mode Admin
+                    </DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="ghost"
               size="sm"

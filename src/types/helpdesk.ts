@@ -46,3 +46,80 @@ export const getStatusLabel = (status: StatusBima): string => {
   };
   return labels[status] || status;
 };
+
+// ---- Bulk Input / Progress Data ----
+
+export type Segment = 'JAKTIM' | 'JAKSEL' | 'JAKPUS';
+
+export const SEGMENT_LIST: Segment[] = ['JAKTIM', 'JAKSEL', 'JAKPUS'];
+
+export const SEGMENT_LABELS: Record<Segment, string> = {
+  JAKTIM: 'Jakarta Timur',
+  JAKSEL: 'Jakarta Selatan',
+  JAKPUS: 'Jakarta Pusat',
+};
+
+export const SEGMENT_COLORS: Record<Segment, { bg: string; text: string; border: string }> = {
+  JAKTIM: { bg: '#EEF2FF', text: '#4338CA', border: '#C7D2FE' },
+  JAKSEL: { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' },
+  JAKPUS: { bg: '#DCFCE7', text: '#166534', border: '#BBF7D0' },
+};
+
+export const SOLVER_LIST = [
+  'HD ISH - DHEO',
+  'HD ISH - AZHRYAN',
+  'HD ISH - FAHRUL',
+  'HD ISH - ANIS',
+  'HD ISH - REIHAN',
+  'HD ISH - ALYA',
+  'HD ISH - IKA',
+  'HD REGULER - SYAHID',
+  'HD REGULER - SETYO',
+  'HD REGULER - BENI',
+  'HD REGULER - RIZAL',
+  'HD REGULER - ETI',
+  'HD REGULER - MUTIA',
+  'HD REGULER - VARA',
+  'HD REGULER - FINADIA',
+  'HD REGULER - TETEP',
+  'HD REGULER - HERMAN',
+  'HD REGULER - VIKA',
+  'HD REGULER - RIKI',
+  'HD REGULER - MAHESA',
+  'HD REGULER - DIAN',
+  'HD REGULER - AYU',
+  'HD REGULER - INTAN',
+  'HD REGULER - DIMAS',
+  'HD REGULER - WAHYU',
+  'HD REGULER - FIKRI',
+  'HD REGULER - AZI',
+  'HD REGULER - ANDES',
+  'HD REGULER - BAIHAQI',
+  'HD REGULER - DAFFA',
+  'HD REGULER - IQBAL',
+] as const;
+
+// Data progress yang diinput dari Filter Sakti
+export interface HelpdeskProgressData {
+  id: string;
+  // Dari Filter Sakti
+  dateCreated: string;
+  workorder: string;
+  scOrder: string;
+  serviceNo: string;
+  crmOrderType: string;
+  status: string;
+  address: string;
+  customerName: string;
+  workzone: string;
+  bookingDate?: string;
+  contactNumber?: string;
+  mitra?: string;
+  // User input
+  segment: Segment;
+  solver: string;
+  inputBy: string;
+  filterMode: string;
+  batchId: string;
+  createdAt: string;
+}

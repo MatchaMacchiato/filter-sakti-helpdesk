@@ -402,7 +402,7 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteTas
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-auto max-h-[400px] rounded-md border">
-                      <Table>
+                      <Table className="min-w-max">
                         <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow>
                             <TableHead className="w-10">No</TableHead>
@@ -429,11 +429,21 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteTas
                               <TableCell className="text-xs">{task.filterStatus}</TableCell>
                               <TableCell className="text-xs max-w-[120px] truncate">{task.customerName}</TableCell>
                               <TableCell className="text-xs">{task.workzone}</TableCell>
-                              <TableCell className="text-xs">
-                                {task.solver
-                                  ? <span className="font-medium">{task.solver.replace('HD ISH - ', '').replace('HD REGULER - ', '')}</span>
-                                  : <span className="text-muted-foreground italic">—</span>
-                                }
+                              <TableCell>
+                                <Select 
+                                  value={task.solver || ''} 
+                                  onValueChange={(val) => onUpdateTask({ ...task, solver: val })}
+                                >
+                                  <SelectTrigger className="h-7 text-[10px] min-w-[120px] bg-transparent border-dashed">
+                                    <SelectValue placeholder="Pilih solver..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground">HD ISH</div>
+                                    {solverGroups.ish.map(s => <SelectItem key={s} value={s} className="text-[10px]">{s.replace('HD ISH - ', '')}</SelectItem>)}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground mt-1">HD REGULER</div>
+                                    {solverGroups.reg.map(s => <SelectItem key={s} value={s} className="text-[10px]">{s.replace('HD REGULER - ', '')}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
                               </TableCell>
                               <TableCell>
                                 {task.statusBima

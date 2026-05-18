@@ -203,7 +203,10 @@ export function HelpdeskDashboard({ helpdeskData, tasks }: HelpdeskDashboardProp
     // Filter by reset date
     if (leaderboardResetDate && item.createdAt && item.createdAt < leaderboardResetDate) return acc;
 
-    const raw = item.namaInput?.trim() || 'Tidak Diketahui';
+    const raw = item.namaInput?.trim();
+    // Exclude tasks that have no solver assigned
+    if (!raw || raw === 'Tidak Diketahui') return acc;
+    
     const key = raw.toLowerCase();
     if (!acc[key]) {
       const titleCase = raw.replace(/\b\w/g, (c: string) => c.toUpperCase());

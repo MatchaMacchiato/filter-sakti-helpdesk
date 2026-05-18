@@ -88,9 +88,7 @@ export const ESKALASI_OPTIONS = [
   'ESKALASI ASO-MARS',
   'ESKALASI MARS',
   'ESKALASI TSEL ALTER AAA',
-  'CABUT INPUL LOS TTI',
-  'CLOSED',
-  'TA FU AREA'
+  'CABUT INPUL LOS TTI'
 ] as const;
 
 export const SOLVER_LIST = [

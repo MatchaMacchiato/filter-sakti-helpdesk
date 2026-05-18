@@ -226,7 +226,7 @@ export function HelpdeskAreaPage({ tasks, onUpdateTask, onDeleteTask }: Helpdesk
                                 Tidak ada data
                               </div>
                             ) : (
-                              <div className="overflow-auto">
+                              <div className="overflow-auto max-h-[500px] [&>div]:overflow-visible">
                                 <Table className="min-w-[1200px]">
                                   <TableHeader className="bg-slate-50">
                                     <TableRow>

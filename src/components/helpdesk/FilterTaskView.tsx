@@ -401,7 +401,7 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteTas
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="overflow-auto max-h-[400px] rounded-md border">
+                    <div className="overflow-auto max-h-[500px] rounded-md border [&>div]:overflow-visible">
                       <Table className="min-w-[1200px]">
                         <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow>

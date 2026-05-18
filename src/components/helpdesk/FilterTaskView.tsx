@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Send, CheckCircle, Package, MapPin, Users, Loader2, FileSpreadsheet,
-  Search, Edit, AlertTriangle, Trash2, RotateCcw, Zap
+  Search, Edit, AlertTriangle, Trash2, RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
@@ -18,7 +18,6 @@ import {
   SOLVER_LIST, SEGMENT_LIST, SEGMENT_COLORS,
   STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS, FINAL_STATUSES
 } from '@/types/helpdesk';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface FilterTaskViewProps {
   tasks: HelpdeskTask[];
@@ -55,7 +54,6 @@ const getStatusColor = (status: string) => {
 };
 
 export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTaskViewProps) {
-  const { user } = useAuth();
   const [hasImportData, setHasImportData] = useState(false);
   const [importCount, setImportCount] = useState(0);
   const [importSegment, setImportSegment] = useState<Segment | ''>('');

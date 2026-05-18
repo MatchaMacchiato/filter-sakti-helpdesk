@@ -9,8 +9,8 @@ import {
   BarChart3, MapPin, Search, Package,
   CheckCircle, Zap, Clock, Wrench, Ban, AlertCircle
 } from 'lucide-react';
-import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
-import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, STATUS_BIMA_OPTIONS, getStatusLabel } from '@/types/helpdesk';
+import type { HelpdeskTask, Segment } from '@/types/helpdesk';
+import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, STATUS_BIMA_OPTIONS } from '@/types/helpdesk';
 
 interface HelpdeskProgressDashboardProps {
   progressData: HelpdeskTask[];

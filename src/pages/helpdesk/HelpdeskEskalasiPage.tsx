@@ -25,10 +25,6 @@ const getStatusBadgeColor = (status: string) => {
   }
 };
 
-// Filter only the eskalasi types that start with "ESKALASI"
-const ESKALASI_TABS = ESKALASI_OPTIONS.filter(e => 
-  e.startsWith('ESKALASI') || e === 'CABUT INPUL' || e === 'CABUT INPUL LOS TTI'
-);
 
 export function HelpdeskEskalasiPage({ tasks }: HelpdeskEskalasiPageProps) {
   const [search, setSearch] = useState('');

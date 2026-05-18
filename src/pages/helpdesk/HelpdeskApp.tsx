@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, orderBy, query, getDocs, where, writeBatch } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, deleteDoc, doc, updateDoc, orderBy, query, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { HelpdeskLayout } from '@/components/helpdesk/HelpdeskLayout';
@@ -171,26 +171,13 @@ export function HelpdeskApp() {
     }
   };
 
-  // Handler untuk Delete Batch
-  const handleDeleteBatch = async (batchId: string) => {
-    try {
-      const q = query(collection(db, 'helpdeskTasks'), where('batchId', '==', batchId));
-      const snapshot = await getDocs(q);
-      const batch = writeBatch(db);
-      snapshot.docs.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-      toast.success(`Batch berhasil dihapus (${snapshot.size} task)`);
-    } catch (error) {
-      console.error(error);
-      toast.error('Gagal menghapus batch');
-    }
-  };
+
 
   return (
     <>
       <HelpdeskLayout>
         <Routes>
-          <Route path="/" element={<HelpdeskDashboard adminData={adminData} helpdeskData={helpdeskData} tasks={tasks} />} />
+          <Route path="/" element={<HelpdeskDashboard helpdeskData={helpdeskData} tasks={tasks} />} />
           <Route 
             path="/admin" 
             element={

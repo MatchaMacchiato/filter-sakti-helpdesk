@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { AdminData, HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
-import { getStatusLabel, STATUS_BIMA_OPTIONS } from '@/types/helpdesk';
+import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
+import { getStatusLabel } from '@/types/helpdesk';
 import {
   CalendarDays,
   CheckCircle,

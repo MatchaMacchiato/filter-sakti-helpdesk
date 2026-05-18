@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import type { AdminData, HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
-import { getStatusLabel, FINAL_STATUSES } from '@/types/helpdesk';
+import type { HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
+import { getStatusLabel } from '@/types/helpdesk';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,7 +50,6 @@ interface UnifiedData {
 }
 
 interface HelpdeskDashboardProps {
-  adminData: AdminData[];
   helpdeskData: HelpdeskData[];
   tasks: HelpdeskTask[];
 }
@@ -78,7 +77,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   WORKFAIL:  { label: 'WORKFAIL',  color: 'text-gray-700',   bg: 'bg-gray-200' },
 };
 
-export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDashboardProps) {
+export function HelpdeskDashboard({ helpdeskData, tasks }: HelpdeskDashboardProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [showViewAll, setShowViewAll] = useState(false);

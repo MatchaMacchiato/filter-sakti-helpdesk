@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
+import type { HelpdeskTask, StatusBima } from '@/types/helpdesk';
 import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS, FINAL_STATUSES, SOLVER_LIST } from '@/types/helpdesk';
-import { MapPin, Search, CheckCircle, Clock, Ban, AlertCircle, Edit, Wrench, Zap, Loader2, Users } from 'lucide-react';
+import { MapPin, Search, CheckCircle, AlertCircle, Edit, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface HelpdeskAreaPageProps {

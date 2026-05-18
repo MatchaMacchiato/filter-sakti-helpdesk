@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
-import { SEGMENT_LIST, SEGMENT_COLORS, FINAL_STATUSES, getStatusLabel } from '@/types/helpdesk';
+import { SEGMENT_LIST, SEGMENT_COLORS, FINAL_STATUSES } from '@/types/helpdesk';
 import { CheckCircle, Ban, Search, Package, FlagTriangleRight, Copy, Check } from 'lucide-react';
 
 interface StatusFinalPageProps {

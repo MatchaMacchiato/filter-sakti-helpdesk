@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { HelpdeskTask, StatusBima } from '@/types/helpdesk';
 import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS, FINAL_STATUSES, SOLVER_LIST } from '@/types/helpdesk';
-import { MapPin, Search, CheckCircle, AlertCircle, Edit, Loader2, Users } from 'lucide-react';
+import { MapPin, Search, CheckCircle, AlertCircle, Edit, Loader2, Users, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HelpdeskAreaPageProps {
   tasks: HelpdeskTask[];
   onUpdateTask: (task: HelpdeskTask) => Promise<void>;
+  onDeleteTask?: (id: string) => Promise<void>;
 }
 
 const getStatusBadgeColor = (status: string) => {
@@ -37,8 +39,11 @@ const getAreaCode = (workzone: string) => {
   return parts[parts.length - 1].toUpperCase().trim();
 };
 
-export function HelpdeskAreaPage({ tasks, onUpdateTask }: HelpdeskAreaPageProps) {
+export function HelpdeskAreaPage({ tasks, onUpdateTask, onDeleteTask }: HelpdeskAreaPageProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [activeTab, setActiveTab] = useState<string>('JAKTIM');
+  const [activeAreaTabs, setActiveAreaTabs] = useState<Record<string, string>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [editTask, setEditTask] = useState<HelpdeskTask | null>(null);
   const [editKategori, setEditKategori] = useState<'Setting' | 'Non Setting' | ''>('');
@@ -184,82 +189,109 @@ export function HelpdeskAreaPage({ tasks, onUpdateTask }: HelpdeskAreaPageProps)
                   Belum ada mapping area untuk segmen ini
                 </div>
               ) : (
-                <div className="space-y-4">
+                <Tabs 
+                  value={activeAreaTabs[segment] || expectedAreas[0]} 
+                  onValueChange={(v) => setActiveAreaTabs(prev => ({ ...prev, [segment]: v }))}
+                >
+                  <TabsList className="flex w-full overflow-x-auto justify-start border-b rounded-none bg-transparent h-auto p-0 mb-4">
+                    {expectedAreas.map(area => {
+                      const areaTasks = groupedByArea[area] || [];
+                      return (
+                        <TabsTrigger 
+                          key={area} 
+                          value={area}
+                          className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-2"
+                        >
+                          AREA {area}
+                          <Badge className="ml-2 font-bold text-xs" variant={areaTasks.length > 0 ? "default" : "secondary"}>
+                            {areaTasks.length}
+                          </Badge>
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+
                   {expectedAreas.map(area => {
                     const areaTasks = groupedByArea[area] || [];
 
                     return (
-                      <Card key={area} className="overflow-hidden border-l-4" style={{ borderLeftColor: colors.text }}>
-                        <CardHeader className="bg-slate-50 py-3 pb-2 flex flex-row items-center justify-between border-b">
-                          <CardTitle className="text-lg font-bold">AREA {area}</CardTitle>
-                          <Badge className="font-bold text-sm" variant={areaTasks.length > 0 ? "default" : "secondary"}>
-                            {areaTasks.length}
-                          </Badge>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          {areaTasks.length === 0 ? (
-                            <div className="py-6 text-center text-xs text-muted-foreground bg-white">
-                              Tidak ada data
-                            </div>
-                          ) : (
-                            <div className="overflow-auto">
-                              <Table>
-                                <TableHeader className="bg-slate-50">
-                                  <TableRow>
-                                    <TableHead className="w-10">No</TableHead>
-                                    <TableHead>Workorder</TableHead>
-                                    <TableHead>SC Order</TableHead>
-                                    <TableHead>Service No</TableHead>
-                                    <TableHead>Order Type</TableHead>
-                                    <TableHead>Status Filter</TableHead>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Workzone</TableHead>
-                                    <TableHead>Solver</TableHead>
-                                    <TableHead>Kendala</TableHead>
-                                    <TableHead>Status BIMA</TableHead>
-                                    <TableHead className="w-16">Aksi</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {areaTasks.map((task, i) => (
-                                    <TableRow key={task.id}>
-                                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                                      <TableCell className="font-mono text-xs">{task.workorder}</TableCell>
-                                      <TableCell className="font-mono text-xs">{task.scOrder}</TableCell>
-                                      <TableCell className="font-mono text-xs">{task.serviceNo}</TableCell>
-                                      <TableCell className="text-xs">{task.crmOrderType}</TableCell>
-                                      <TableCell className="text-xs">{task.filterStatus}</TableCell>
-                                      <TableCell className="text-xs max-w-[120px] truncate">{task.customerName}</TableCell>
-                                      <TableCell className="text-xs">{task.workzone}</TableCell>
-                                      <TableCell className="text-xs font-medium">
-                                        {task.solver?.replace('HD ISH - ', '').replace('HD REGULER - ', '') || '—'}
-                                      </TableCell>
-                                      <TableCell className="text-xs">{task.kendala || '—'}</TableCell>
-                                      <TableCell>
-                                        {task.statusBima ? (
-                                          <Badge variant="outline" className={`text-[9px] px-1 py-0 h-5 border ${getStatusBadgeColor(task.statusBima)}`}>
-                                            {task.statusBima}
-                                          </Badge>
-                                        ) : (
-                                          <span className="text-xs text-muted-foreground">—</span>
-                                        )}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(task)}>
-                                          <Edit className="w-4 h-4" />
-                                        </Button>
-                                      </TableCell>
+                      <TabsContent key={area} value={area} className="mt-0">
+                        <Card className="overflow-hidden border-l-4" style={{ borderLeftColor: colors.text }}>
+                          <CardHeader className="bg-slate-50 py-3 pb-2 flex flex-row items-center justify-between border-b">
+                            <CardTitle className="text-lg font-bold">AREA {area}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-0">
+                            {areaTasks.length === 0 ? (
+                              <div className="py-6 text-center text-xs text-muted-foreground bg-white">
+                                Tidak ada data
+                              </div>
+                            ) : (
+                              <div className="overflow-auto">
+                                <Table>
+                                  <TableHeader className="bg-slate-50">
+                                    <TableRow>
+                                      <TableHead className="w-10">No</TableHead>
+                                      <TableHead>Workorder</TableHead>
+                                      <TableHead>SC Order</TableHead>
+                                      <TableHead>Service No</TableHead>
+                                      <TableHead>Order Type</TableHead>
+                                      <TableHead>Status Filter</TableHead>
+                                      <TableHead>Customer</TableHead>
+                                      <TableHead>Workzone</TableHead>
+                                      <TableHead>Solver</TableHead>
+                                      <TableHead>Kendala</TableHead>
+                                      <TableHead>Status BIMA</TableHead>
+                                      <TableHead className="w-16">Aksi</TableHead>
                                     </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {areaTasks.map((task, i) => (
+                                      <TableRow key={task.id}>
+                                        <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                                        <TableCell className="font-mono text-xs">{task.workorder}</TableCell>
+                                        <TableCell className="font-mono text-xs">{task.scOrder}</TableCell>
+                                        <TableCell className="font-mono text-xs">{task.serviceNo}</TableCell>
+                                        <TableCell className="text-xs">{task.crmOrderType}</TableCell>
+                                        <TableCell className="text-xs">{task.filterStatus}</TableCell>
+                                        <TableCell className="text-xs max-w-[120px] truncate">{task.customerName}</TableCell>
+                                        <TableCell className="text-xs">{task.workzone}</TableCell>
+                                        <TableCell className="text-xs font-medium">
+                                          {task.solver?.replace('HD ISH - ', '').replace('HD REGULER - ', '') || '—'}
+                                        </TableCell>
+                                        <TableCell className="text-xs">{task.kendala || '—'}</TableCell>
+                                        <TableCell>
+                                          {task.statusBima ? (
+                                            <Badge variant="outline" className={`text-[9px] px-1 py-0 h-5 border ${getStatusBadgeColor(task.statusBima)}`}>
+                                              {task.statusBima}
+                                            </Badge>
+                                          ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                          )}
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex gap-1">
+                                            <Button variant="ghost" size="sm" onClick={() => openEditDialog(task)}>
+                                              <Edit className="w-4 h-4" />
+                                            </Button>
+                                            {isAdmin && onDeleteTask && (
+                                              <Button variant="ghost" size="sm" onClick={() => onDeleteTask(task.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                <Trash2 className="w-4 h-4" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
                     );
                   })}
-                </div>
+                </Tabs>
               )}
             </TabsContent>
           );

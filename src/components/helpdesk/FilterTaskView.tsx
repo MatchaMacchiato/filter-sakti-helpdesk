@@ -18,11 +18,13 @@ import {
   SOLVER_LIST, SEGMENT_LIST, SEGMENT_COLORS,
   STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS, FINAL_STATUSES
 } from '@/types/helpdesk';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FilterTaskViewProps {
   tasks: HelpdeskTask[];
   onImportTasks: (tasks: Omit<HelpdeskTask, 'id'>[]) => Promise<void>;
   onUpdateTask: (task: HelpdeskTask) => Promise<void>;
+  onDeleteTask?: (id: string) => Promise<void>;
 }
 
 const COL_MAP: Record<string, string> = {
@@ -53,7 +55,9 @@ const getStatusColor = (status: string) => {
   }
 };
 
-export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTaskViewProps) {
+export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteTask }: FilterTaskViewProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [hasImportData, setHasImportData] = useState(false);
   const [importCount, setImportCount] = useState(0);
   const [importSegment, setImportSegment] = useState<Segment | ''>('');
@@ -107,19 +111,31 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
       const existingWorkorders = new Set(tasks.map(t => t.workorder.toLowerCase()));
       const existingScOrders = new Set(tasks.map(t => t.scOrder.toLowerCase()));
 
+      const mapFilterStatus = (status: string): StatusBima => {
+        const s = status.toUpperCase();
+        if (s.includes('COMPWORK')) return 'COMPWORK';
+        if (s.includes('CANCLWORK')) return 'CANCLWORK';
+        if (s.includes('WAPPR')) return 'WAPPR';
+        if (s.includes('INSTCOMP')) return 'INSTCOMP';
+        if (s.includes('ACTCOMP')) return 'ACTCOMP';
+        if (s.includes('WORKFAIL')) return 'WORKFAIL';
+        return 'STARWORK';
+      };
+
       const allItems: Omit<HelpdeskTask, 'id'>[] = (parsed.data || []).map((row: Record<string, unknown>) => {
         const mapped: Record<string, string> = {};
         Object.entries(COL_MAP).forEach(([filterCol, targetCol]) => {
           const val = row[filterCol];
           mapped[targetCol] = val !== null && val !== undefined ? String(val) : '';
         });
+        const fs = mapped.filterStatus || '';
         return {
           dateCreated: mapped.dateCreated || '',
           workorder: mapped.workorder || '',
           scOrder: mapped.scOrder || '',
           serviceNo: mapped.serviceNo || '',
           crmOrderType: mapped.crmOrderType || '',
-          filterStatus: mapped.filterStatus || '',
+          filterStatus: fs,
           address: mapped.address || '',
           customerName: mapped.customerName || '',
           workzone: mapped.workzone || '',
@@ -135,7 +151,7 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
           kendala: '',
           kategori: '' as const,
           eskalasi: '',
-          statusBima: '' as const,
+          statusBima: mapFilterStatus(fs),
           taskStatus: 'pending' as const,
           updatedBy: '',
           updatedAt: '',
@@ -428,9 +444,16 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask }: FilterTas
                                 }
                               </TableCell>
                               <TableCell>
-                                <Button variant="ghost" size="sm" onClick={() => openEditDialog(task)}>
-                                  <Edit className="w-4 h-4" />
-                                </Button>
+                                <div className="flex gap-1">
+                                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(task)}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  {isAdmin && onDeleteTask && (
+                                    <Button variant="ghost" size="sm" onClick={() => onDeleteTask(task.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}

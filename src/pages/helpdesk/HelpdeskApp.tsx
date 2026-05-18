@@ -171,6 +171,18 @@ export function HelpdeskApp() {
     }
   };
 
+  // Handler untuk Delete Task
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'helpdeskTasks', id));
+      toast.success('Order berhasil dihapus!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal menghapus order');
+      throw error;
+    }
+  };
+
 
 
   return (
@@ -183,6 +195,7 @@ export function HelpdeskApp() {
             element={
               <HelpdeskAdminPage 
                 adminData={adminData}
+                tasks={tasks}
                 onAddAdminData={handleAddAdminData}
                 onDeleteAdminData={handleDeleteAdminData}
               />
@@ -200,6 +213,7 @@ export function HelpdeskApp() {
                 tasks={tasks}
                 onImportTasks={handleImportTasks}
                 onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
               />
             } 
           />
@@ -227,6 +241,7 @@ export function HelpdeskApp() {
               <HelpdeskAreaPage 
                 tasks={tasks}
                 onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
               />
             } 
           />

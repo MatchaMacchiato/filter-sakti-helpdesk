@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS } from '@/types/helpdesk';
 import { PlusCircle, Trash2, Edit, ClipboardList, Search, CheckCircle2, AlertTriangle, ChevronDown, ChevronUp, Wifi, CalendarDays, CalendarCheck, Clock, Copy, Check, ChevronsUpDown, ListFilter, FileInput } from 'lucide-react';
@@ -25,6 +26,7 @@ interface AgentPageProps {
   tasks: HelpdeskTask[];
   onImportTasks: (tasks: Omit<HelpdeskTask, 'id'>[]) => Promise<void>;
   onUpdateTask: (task: HelpdeskTask) => Promise<void>;
+  onDeleteTask?: (id: string) => Promise<void>;
 }
 
 const getStatusColor = (status: string) => {
@@ -97,7 +99,7 @@ const getRelativeDay = (dateStr: string, today: string): string => {
   return `${diffDays} Hari Lalu`;
 };
 
-export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk, tasks, onImportTasks, onUpdateTask }: AgentPageProps) {
+export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDeleteHelpdesk, onEditHelpdesk, tasks, onImportTasks, onUpdateTask, onDeleteTask }: AgentPageProps) {
   const [activeTab, setActiveTab] = useState<'tasks' | 'manual'>('tasks');
   const [selectedInet, setSelectedInet] = useState<string>('');
   const [namaInput, setNamaInput] = useState(() => localStorage.getItem('helpdeskNamaInput') || '');
@@ -333,43 +335,31 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
         <h1 className="text-3xl font-bold">Input Progres</h1>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('tasks')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'tasks' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <ListFilter className="w-4 h-4" /> Task dari Filter
-          {tasks.filter(t => t.taskStatus === 'pending').length > 0 && (
-            <Badge variant="destructive" className="text-[10px] h-5 px-1.5">
-              {tasks.filter(t => t.taskStatus === 'pending').length}
-            </Badge>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('manual')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'manual' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <FileInput className="w-4 h-4" /> Input Manual
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+        <TabsList className="grid w-fit grid-cols-2">
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <ListFilter className="w-4 h-4" /> Task dari Filter
+            {tasks.filter(t => t.taskStatus === 'pending').length > 0 && (
+              <Badge variant="destructive" className="ml-2 text-[10px] h-5 px-1.5">
+                {tasks.filter(t => t.taskStatus === 'pending').length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="manual" className="flex items-center gap-2">
+            <FileInput className="w-4 h-4" /> Input Manual
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Tab: Task dari Filter */}
-      {activeTab === 'tasks' && (
-        <FilterTaskView
-          tasks={tasks}
-          onImportTasks={onImportTasks}
-          onUpdateTask={onUpdateTask}
-        />
-      )}
+        <TabsContent value="tasks" className="space-y-4">
+          <FilterTaskView
+            tasks={tasks}
+            onImportTasks={onImportTasks}
+            onUpdateTask={onUpdateTask}
+            onDeleteTask={onDeleteTask}
+          />
+        </TabsContent>
 
-      {/* Tab: Input Manual (existing content) */}
-      {activeTab === 'manual' && (
-        <>
+        <TabsContent value="manual" className="space-y-4">
       <Card className="border-green-200">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-2">
@@ -977,8 +967,8 @@ export function HelpdeskSiswaPage({ adminData, helpdeskData, onAddHelpdesk, onDe
           )}
         </DialogContent>
       </Dialog>
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

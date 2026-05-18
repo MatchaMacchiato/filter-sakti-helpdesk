@@ -23,9 +23,10 @@ export interface HelpdeskData {
   updatedAt: string;
 }
 
-export type StatusBima = 'COMPWORK' | 'WAPPR' | 'INSTCOMP' | 'ACTCOMP' | 'CANCLWORK' | 'WORKFAIL';
+export type StatusBima = 'STARWORK' | 'COMPWORK' | 'WAPPR' | 'INSTCOMP' | 'ACTCOMP' | 'CANCLWORK' | 'WORKFAIL';
 
 export const STATUS_BIMA_OPTIONS: StatusBima[] = [
+  'STARWORK',
   'COMPWORK',
   'WAPPR',
   'INSTCOMP',
@@ -37,6 +38,7 @@ export const STATUS_BIMA_OPTIONS: StatusBima[] = [
 // Helper untuk mendapatkan label yang lebih readable
 export const getStatusLabel = (status: StatusBima): string => {
   const labels: Record<StatusBima, string> = {
+    'STARWORK': 'Start Work',
     'COMPWORK': 'Complete Work',
     'WAPPR': 'Waiting Approval',
     'INSTCOMP': 'Install Complete',
@@ -152,6 +154,9 @@ export interface HelpdeskProgressData {
 
 // Task dari Filter Sakti yang perlu dikerjakan solver
 export type TaskStatus = 'pending' | 'completed';
+
+// Final statuses that move tasks to Status Final
+export const FINAL_STATUSES: StatusBima[] = ['COMPWORK', 'CANCLWORK'];
 
 export interface HelpdeskTask {
   id: string;

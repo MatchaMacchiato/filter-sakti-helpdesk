@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,30 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { AdminData, HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
-import { getStatusLabel } from '@/types/helpdesk';
+import { getStatusLabel, FINAL_STATUSES } from '@/types/helpdesk';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  ClipboardList, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle,
+  BarChart3,
+  GraduationCap,
+  Wrench,
+  Ban,
+  Eye,
+  Search,
+  Copy,
+  Check,
+  X,
+  FileSpreadsheet,
+  Trophy,
+  ChevronDown,
+  RotateCcw,
+  Zap
+} from 'lucide-react';
 
 interface UnifiedData {
   id: string;
@@ -18,27 +41,13 @@ interface UnifiedData {
   eskalasi: string;
   statusBima: StatusBima | string;
   createdAt: string;
+  // Extra task fields for detail view
+  workorder?: string;
+  serviceNo?: string;
+  customerName?: string;
+  segment?: string;
+  filterStatus?: string;
 }
-import { 
-  ClipboardList, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
-  BarChart3,
-  Database,
-  GraduationCap,
-  UserCog,
-  Wrench,
-  Ban,
-  Eye,
-  Search,
-  Copy,
-  Check,
-  X,
-  FileSpreadsheet,
-  Trophy,
-  ChevronDown
-} from 'lucide-react';
 
 interface HelpdeskDashboardProps {
   adminData: AdminData[];
@@ -48,24 +57,19 @@ interface HelpdeskDashboardProps {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'COMPWORK':
-      return 'bg-green-500';
-    case 'WAPPR':
-      return 'bg-yellow-500';
-    case 'INSTCOMP':
-      return 'bg-blue-500';
-    case 'ACTCOMP':
-      return 'bg-purple-500';
-    case 'CANCLWORK':
-      return 'bg-red-500';
-    case 'WORKFAIL':
-      return 'bg-gray-700';
-    default:
-      return 'bg-gray-500';
+    case 'STARWORK': return 'bg-cyan-500';
+    case 'COMPWORK': return 'bg-green-500';
+    case 'WAPPR': return 'bg-yellow-500';
+    case 'INSTCOMP': return 'bg-blue-500';
+    case 'ACTCOMP': return 'bg-purple-500';
+    case 'CANCLWORK': return 'bg-red-500';
+    case 'WORKFAIL': return 'bg-gray-700';
+    default: return 'bg-gray-500';
   }
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  STARWORK:  { label: 'STARWORK',  color: 'text-cyan-700',   bg: 'bg-cyan-100' },
   COMPWORK:  { label: 'COMPWORK',  color: 'text-green-700',  bg: 'bg-green-100' },
   WAPPR:     { label: 'WAPPR',     color: 'text-yellow-700', bg: 'bg-yellow-100' },
   INSTCOMP:  { label: 'INSTCOMP',  color: 'text-blue-700',   bg: 'bg-blue-100' },
@@ -75,10 +79,46 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 };
 
 export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDashboardProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [showViewAll, setShowViewAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
   const [expandedNames, setExpandedNames] = useState<Set<string>>(new Set());
+  const [statusDetailDialog, setStatusDetailDialog] = useState<string | null>(null);
+  const [leaderboardResetDate, setLeaderboardResetDate] = useState<string>('');
+
+  // Load leaderboard reset date
+  useEffect(() => {
+    const loadResetDate = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'settings', 'leaderboard'));
+        if (settingsDoc.exists()) {
+          setLeaderboardResetDate(settingsDoc.data().resetDate || '');
+        } else {
+          // Initialize with start of current month
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+          setLeaderboardResetDate(startOfMonth);
+        }
+      } catch (err) {
+        console.error('Failed to load leaderboard reset date:', err);
+      }
+    };
+    loadResetDate();
+  }, []);
+
+  const handleResetLeaderboard = async () => {
+    if (!isAdmin) return;
+    if (!confirm('Apakah Anda yakin ingin mereset leaderboard? Perhitungan akan mulai dari sekarang.')) return;
+    try {
+      const now = new Date().toISOString();
+      await setDoc(doc(db, 'settings', 'leaderboard'), { resetDate: now });
+      setLeaderboardResetDate(now);
+    } catch (err) {
+      console.error('Failed to reset leaderboard:', err);
+    }
+  };
 
   const toggleExpand = (name: string) => {
     setExpandedNames(prev => {
@@ -114,17 +154,22 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
           kategori: t.kategori,
           eskalasi: t.eskalasi,
           statusBima: t.statusBima,
-          createdAt: t.updatedAt || t.importedAt
+          createdAt: t.updatedAt || t.importedAt,
+          workorder: t.workorder,
+          serviceNo: t.serviceNo,
+          customerName: t.customerName,
+          segment: t.segment,
+          filterStatus: t.filterStatus,
         });
       }
     });
     return list;
   }, [helpdeskData, tasks]);
 
-  const totalAdminData = adminData.length;
   const totalHelpdeskData = unifiedData.length;
   
   // Status counts
+  const starworkCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'STARWORK').length;
   const compworkCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'COMPWORK').length;
   const wapprCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'WAPPR').length;
   const instcompCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'INSTCOMP').length;
@@ -132,66 +177,15 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   const canclworkCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'CANCLWORK').length;
   const workfailCount = unifiedData.filter((d: UnifiedData) => d.statusBima === 'WORKFAIL').length;
 
-  const adminStats = [
-    {
-      title: 'Total Data Master',
-      value: totalAdminData,
-      icon: Database,
-      color: 'bg-purple-500',
-      textColor: 'text-purple-500'
-    }
-  ];
-
   const agentStats = [
-    {
-      title: 'Total Progress Helpdesk',
-      value: totalHelpdeskData,
-      icon: ClipboardList,
-      color: 'bg-blue-500',
-      textColor: 'text-blue-500'
-    },
-    {
-      title: 'COMPWORK',
-      value: compworkCount,
-      icon: CheckCircle,
-      color: 'bg-green-500',
-      textColor: 'text-green-500'
-    },
-    {
-      title: 'WAPPR',
-      value: wapprCount,
-      icon: Clock,
-      color: 'bg-yellow-500',
-      textColor: 'text-yellow-500'
-    },
-    {
-      title: 'INSTCOMP',
-      value: instcompCount,
-      icon: Wrench,
-      color: 'bg-blue-500',
-      textColor: 'text-blue-500'
-    },
-    {
-      title: 'ACTCOMP',
-      value: actcompCount,
-      icon: CheckCircle,
-      color: 'bg-purple-500',
-      textColor: 'text-purple-500'
-    },
-    {
-      title: 'CANCLWORK',
-      value: canclworkCount,
-      icon: Ban,
-      color: 'bg-red-500',
-      textColor: 'text-red-500'
-    },
-    {
-      title: 'WORKFAIL',
-      value: workfailCount,
-      icon: AlertCircle,
-      color: 'bg-gray-700',
-      textColor: 'text-gray-700'
-    }
+    { title: 'Total Progress', value: totalHelpdeskData, icon: ClipboardList, color: 'bg-blue-500', textColor: 'text-blue-500', statusKey: '' },
+    { title: 'STARWORK', value: starworkCount, icon: Zap, color: 'bg-cyan-500', textColor: 'text-cyan-500', statusKey: 'STARWORK' },
+    { title: 'COMPWORK', value: compworkCount, icon: CheckCircle, color: 'bg-green-500', textColor: 'text-green-500', statusKey: 'COMPWORK' },
+    { title: 'WAPPR', value: wapprCount, icon: Clock, color: 'bg-yellow-500', textColor: 'text-yellow-500', statusKey: 'WAPPR' },
+    { title: 'INSTCOMP', value: instcompCount, icon: Wrench, color: 'bg-blue-500', textColor: 'text-blue-500', statusKey: 'INSTCOMP' },
+    { title: 'ACTCOMP', value: actcompCount, icon: CheckCircle, color: 'bg-purple-500', textColor: 'text-purple-500', statusKey: 'ACTCOMP' },
+    { title: 'CANCLWORK', value: canclworkCount, icon: Ban, color: 'bg-red-500', textColor: 'text-red-500', statusKey: 'CANCLWORK' },
+    { title: 'WORKFAIL', value: workfailCount, icon: AlertCircle, color: 'bg-gray-700', textColor: 'text-gray-700', statusKey: 'WORKFAIL' },
   ];
 
   const filteredData = unifiedData.filter((item: UnifiedData) => 
@@ -203,8 +197,13 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
     (item.statusBima || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Leaderboard: hitung jumlah pekerjaan per agent (semua status), case-insensitive
+  // Leaderboard: count only COMPWORK + CANCLWORK, filtered by reset date
   const leaderboardMap = unifiedData.reduce<Record<string, { displayName: string; count: number; statusBreakdown: Record<string, number> }>>((acc, item: UnifiedData) => {
+    // Only count COMPWORK and CANCLWORK
+    if (item.statusBima !== 'COMPWORK' && item.statusBima !== 'CANCLWORK') return acc;
+    // Filter by reset date
+    if (leaderboardResetDate && item.createdAt && item.createdAt < leaderboardResetDate) return acc;
+
     const raw = item.namaInput?.trim() || 'Tidak Diketahui';
     const key = raw.toLowerCase();
     if (!acc[key]) {
@@ -223,7 +222,6 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
   const maxCount = leaderboard[0]?.count || 1;
 
   const handleCopyToClipboard = () => {
-    // Format data untuk copy ke spreadsheet
     const headers = ['No', 'Nama', 'Inet', 'SC ORDER', 'Kendala', 'Kategori', 'Eskalasi', 'STATUS BIMA', 'Tanggal'];
     const rows = filteredData.map((item: UnifiedData, index: number) => [
       index + 1,
@@ -243,6 +241,12 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Orders for a specific status (for clickable cards)
+  const getOrdersByStatus = (statusKey: string) => {
+    if (!statusKey) return unifiedData;
+    return unifiedData.filter(d => d.statusBima === statusKey);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -250,32 +254,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
         <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
 
-      {/* Admin Stats */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <UserCog className="w-5 h-5" />
-          Data Admin (Master)
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adminStats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow border-purple-200">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`p-2 rounded-lg ${stat.color} bg-opacity-10`}>
-                  <stat.icon className={`w-5 h-5 ${stat.textColor}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Siswa Stats dengan tombol View All */}
+      {/* Agent Stats with clickable cards */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -293,7 +272,11 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {agentStats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={index} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => setStatusDetailDialog(stat.statusKey)}
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
@@ -304,6 +287,9 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{stat.value}</div>
+                {stat.statusKey && (
+                  <p className="text-xs text-muted-foreground mt-1">Klik untuk detail</p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -313,11 +299,31 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
       {/* Leaderboard */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            Leaderboard Agent Helpdesk
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">Peringkat berdasarkan total pekerjaan yang sudah dikerjakan (semua status)</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                Leaderboard Agent Helpdesk
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Peringkat berdasarkan total COMPWORK + CANCLWORK</p>
+              {leaderboardResetDate && (
+                <p className="text-xs text-muted-foreground">
+                  Mulai dari: {new Date(leaderboardResetDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetLeaderboard}
+                className="gap-2 text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset Leaderboard
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {leaderboard.length === 0 ? (
@@ -325,7 +331,6 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
           ) : (
             <div className="space-y-2">
               {leaderboard.map((entry) => {
-                // Dense rank: rank ditentukan dari count, bukan index
                 const rank = leaderboard.findIndex((e: any) => e.count === entry.count) + 1;
                 const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null;
                 const barColor =
@@ -338,16 +343,13 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                 const breakdown = Object.entries(entry.statusBreakdown as Record<string, number>).sort((a, b) => b[1] - a[1]);
                 return (
                   <div key={entry.displayName} className="border rounded-lg overflow-hidden">
-                    {/* Row utama — klik untuk expand */}
                     <button
                       onClick={() => toggleExpand(entry.displayName)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left"
                     >
-                      {/* Rank */}
                       <div className="w-8 text-center font-bold text-sm shrink-0">
                         {medal ?? <span className="text-muted-foreground">#{rank}</span>}
                       </div>
-                      {/* Name & bar */}
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
                           <span className={`text-sm truncate ${isTopRank ? 'font-semibold' : 'font-medium'}`}>
@@ -362,13 +364,11 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
                           />
                         </div>
                       </div>
-                      {/* Chevron */}
                       <ChevronDown
                         className={`w-4 h-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
                       />
                     </button>
 
-                    {/* Dropdown detail breakdown */}
                     {isExpanded && (
                       <div className="px-4 pb-3 pt-1 bg-muted/30 border-t">
                         <p className="text-xs text-muted-foreground mb-2">Breakdown per status:</p>
@@ -398,7 +398,7 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
         </CardContent>
       </Card>
 
-      {/* Ringkasan */}
+      {/* Ringkasan — Only COMPWORK percentage */}
       <Card>
         <CardHeader>
           <CardTitle>Ringkasan Status Progress Helpdesk</CardTitle>
@@ -408,30 +408,20 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
             {totalHelpdeskData > 0 ? (
               <>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Persentase Complete Work</span>
-                  <span className="font-medium">
+                  <span className="text-sm text-muted-foreground">Persentase Complete Work (COMPWORK)</span>
+                  <span className="font-medium text-green-600">
                     {((compworkCount / totalHelpdeskData) * 100).toFixed(1)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
-                    className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${(compworkCount / totalHelpdeskData) * 100}%` }}
                   ></div>
                 </div>
-                
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-sm text-muted-foreground">Persentase Waiting Approval</span>
-                  <span className="font-medium">
-                    {((wapprCount / totalHelpdeskData) * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-yellow-500 h-2.5 rounded-full transition-all duration-500"
-                    style={{ width: `${(wapprCount / totalHelpdeskData) * 100}%` }}
-                  ></div>
-                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  {compworkCount} dari {totalHelpdeskData} order sudah Complete Work
+                </p>
               </>
             ) : (
               <p className="text-center text-muted-foreground py-4">
@@ -441,6 +431,61 @@ export function HelpdeskDashboard({ adminData, helpdeskData, tasks }: HelpdeskDa
           </div>
         </CardContent>
       </Card>
+
+      {/* Status Detail Dialog (clickable status cards) */}
+      <Dialog open={statusDetailDialog !== null} onOpenChange={() => setStatusDetailDialog(null)}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5" />
+              {statusDetailDialog ? `Order dengan status ${statusDetailDialog}` : 'Semua Order'}
+              <Badge variant="outline">{getOrdersByStatus(statusDetailDialog || '').length} order</Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto flex-1 border rounded-lg">
+            <Table>
+              <TableHeader className="sticky top-0 bg-white z-10">
+                <TableRow>
+                  <TableHead className="w-10">No</TableHead>
+                  <TableHead>Nama / Solver</TableHead>
+                  <TableHead>Inet / Service No</TableHead>
+                  <TableHead>SC Order</TableHead>
+                  <TableHead>Kendala</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Eskalasi</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {getOrdersByStatus(statusDetailDialog || '').length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      Tidak ada data
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  getOrdersByStatus(statusDetailDialog || '').map((item, idx) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{idx + 1}</TableCell>
+                      <TableCell className="font-medium text-primary">{item.namaInput || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.inet || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.scOrder || '-'}</TableCell>
+                      <TableCell className="text-xs">{item.kendala || '-'}</TableCell>
+                      <TableCell className="text-xs">{item.kategori || '-'}</TableCell>
+                      <TableCell className="text-xs">{item.eskalasi || '-'}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(item.statusBima)}>
+                          {item.statusBima}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog View All */}
       <Dialog open={showViewAll} onOpenChange={setShowViewAll}>

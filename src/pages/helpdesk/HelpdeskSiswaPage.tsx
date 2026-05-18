@@ -29,6 +29,8 @@ interface AgentPageProps {
 
 const getStatusColor = (status: string) => {
   switch (status) {
+    case 'STARWORK':
+      return 'bg-cyan-500 hover:bg-cyan-600';
     case 'COMPWORK':
       return 'bg-green-500 hover:bg-green-600';
     case 'WAPPR':

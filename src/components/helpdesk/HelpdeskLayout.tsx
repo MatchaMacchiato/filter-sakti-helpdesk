@@ -9,7 +9,9 @@ import {
   Settings,
   ArrowLeft,
   BarChart3,
-  MapPin
+  MapPin,
+  FlagTriangleRight,
+  AlertTriangle
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -34,8 +36,10 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
     { path: '/helpdesk', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/helpdesk/input', label: 'Input Progres', icon: ClipboardList },
     { path: '/helpdesk/daily', label: 'Progres Harian', icon: CalendarDays },
-    { path: '/helpdesk/progress-dashboard', label: 'Dashboard Progress', icon: BarChart3 },
+    { path: '/helpdesk/progress-dashboard', label: 'Dashboard Monitoring', icon: BarChart3 },
     { path: '/helpdesk/area', label: 'Area', icon: MapPin },
+    { path: '/helpdesk/status-final', label: 'Status Final', icon: FlagTriangleRight },
+    { path: '/helpdesk/eskalasi', label: 'Eskalasi', icon: AlertTriangle },
   ];
 
   return (
@@ -46,12 +50,13 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
           <h1 className="text-xl font-bold text-primary">Helpdesk Tracker</h1>
           <p className="text-xs text-muted-foreground mt-1">Sistem Input Data Helpdesk</p>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
           {mainNavItems.map((item) => (
             <Link key={item.path} to={item.path}>
               <Button
                 variant={location.pathname === item.path ? 'default' : 'ghost'}
                 className="w-full justify-start gap-3"
+                size="sm"
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
@@ -65,7 +70,7 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
           <div className="p-4 border-t">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full justify-start gap-3">
+                <Button variant="ghost" className="w-full justify-start gap-3" size="sm">
                   <Settings className="w-4 h-4" />
                   Admin Settings
                 </Button>
@@ -85,7 +90,7 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
         {/* Back to Landing */}
         <div className="p-4 border-t">
           <Link to="/">
-            <Button variant="outline" className="w-full justify-start gap-3">
+            <Button variant="outline" className="w-full justify-start gap-3" size="sm">
               <ArrowLeft className="w-4 h-4" />
               Kembali ke Menu Utama
             </Button>
@@ -132,12 +137,13 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
 
         {/* Mobile Menu */}
         {isSidebarOpen && (
-          <nav className="border-t p-4 space-y-2 bg-white">
+          <nav className="border-t p-4 space-y-1.5 bg-white max-h-[70vh] overflow-y-auto">
             {mainNavItems.map((item) => (
               <Link key={item.path} to={item.path} onClick={() => setIsSidebarOpen(false)}>
                 <Button
                   variant={location.pathname === item.path ? 'default' : 'ghost'}
                   className="w-full justify-start gap-3"
+                  size="sm"
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -145,7 +151,7 @@ export function HelpdeskLayout({ children }: HelpdeskLayoutProps) {
               </Link>
             ))}
             <Link to="/" onClick={() => setIsSidebarOpen(false)}>
-              <Button variant="outline" className="w-full justify-start gap-3 mt-2">
+              <Button variant="outline" className="w-full justify-start gap-3 mt-2" size="sm">
                 <ArrowLeft className="w-4 h-4" />
                 Menu Utama
               </Button>

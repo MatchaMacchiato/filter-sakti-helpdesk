@@ -1,32 +1,60 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { HelpdeskTask } from '@/types/helpdesk';
-import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING } from '@/types/helpdesk';
-import { MapPin, Search, CheckCircle, Clock, Ban, AlertCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { HelpdeskTask, Segment, StatusBima } from '@/types/helpdesk';
+import { SEGMENT_LIST, SEGMENT_COLORS, AREA_MAPPING, STATUS_BIMA_OPTIONS, getStatusLabel, ESKALASI_OPTIONS, FINAL_STATUSES, SOLVER_LIST } from '@/types/helpdesk';
+import { MapPin, Search, CheckCircle, Clock, Ban, AlertCircle, Edit, Wrench, Zap, Loader2, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface HelpdeskAreaPageProps {
   tasks: HelpdeskTask[];
+  onUpdateTask: (task: HelpdeskTask) => Promise<void>;
 }
 
-export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
+const getStatusBadgeColor = (status: string) => {
+  switch (status) {
+    case 'STARWORK': return 'bg-cyan-100 text-cyan-700 border-cyan-300';
+    case 'COMPWORK': return 'bg-green-100 text-green-700 border-green-300';
+    case 'WAPPR': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+    case 'INSTCOMP': return 'bg-blue-100 text-blue-700 border-blue-300';
+    case 'ACTCOMP': return 'bg-purple-100 text-purple-700 border-purple-300';
+    case 'CANCLWORK': return 'bg-red-100 text-red-700 border-red-300';
+    case 'WORKFAIL': return 'bg-gray-200 text-gray-700 border-gray-400';
+    default: return 'bg-slate-100 text-slate-700 border-slate-300';
+  }
+};
+
+const getAreaCode = (workzone: string) => {
+  if (!workzone) return '';
+  const parts = workzone.split('-');
+  return parts[parts.length - 1].toUpperCase().trim();
+};
+
+export function HelpdeskAreaPage({ tasks, onUpdateTask }: HelpdeskAreaPageProps) {
   const [activeTab, setActiveTab] = useState<string>('JAKTIM');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editTask, setEditTask] = useState<HelpdeskTask | null>(null);
+  const [editKategori, setEditKategori] = useState<'Setting' | 'Non Setting' | ''>('');
+  const [editSolver, setEditSolver] = useState('');
+  const [editKendala, setEditKendala] = useState('');
+  const [editEskalasi, setEditEskalasi] = useState('');
+  const [editStatusBima, setEditStatusBima] = useState<StatusBima | ''>('');
+  const [saving, setSaving] = useState(false);
 
-  // Hanya ambil data Setting
+  // Only show Setting tasks that are NOT final status
   const settingTasks = useMemo(() => {
-    return tasks.filter(t => t.kategori === 'Setting');
+    return tasks.filter(t => 
+      t.kategori === 'Setting' && 
+      !FINAL_STATUSES.includes(t.statusBima as StatusBima)
+    );
   }, [tasks]);
-
-  // Extract area code from workzone (misal "JKT-CWA" -> "CWA", atau jika hanya "CWA" ya "CWA")
-  const getAreaCode = (workzone: string) => {
-    if (!workzone) return '';
-    // Kadang workzone formatnya "JKT-CWA", kadang cuma "CWA"
-    const parts = workzone.split('-');
-    return parts[parts.length - 1].toUpperCase().trim();
-  };
 
   // Filter tasks based on search
   const filteredTasks = useMemo(() => {
@@ -38,34 +66,67 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
       t.serviceNo.toLowerCase().includes(term) ||
       t.customerName.toLowerCase().includes(term) ||
       t.kendala?.toLowerCase().includes(term) ||
-      (t.statusBima || '').toLowerCase().includes(term)
+      (t.statusBima || '').toLowerCase().includes(term) ||
+      t.solver?.toLowerCase().includes(term)
     );
   }, [settingTasks, searchTerm]);
 
   // Group by Area
   const groupedByArea = useMemo(() => {
     const map: Record<string, HelpdeskTask[]> = {};
-    
     filteredTasks.forEach(task => {
       const area = getAreaCode(task.workzone);
       if (!map[area]) map[area] = [];
       map[area].push(task);
     });
-    
     return map;
   }, [filteredTasks]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPWORK': return 'bg-green-100 text-green-700 border-green-300';
-      case 'WAPPR': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'INSTCOMP': return 'bg-blue-100 text-blue-700 border-blue-300';
-      case 'ACTCOMP': return 'bg-purple-100 text-purple-700 border-purple-300';
-      case 'CANCLWORK': return 'bg-red-100 text-red-700 border-red-300';
-      case 'WORKFAIL': return 'bg-gray-200 text-gray-700 border-gray-400';
-      default: return 'bg-slate-100 text-slate-700 border-slate-300';
+  const openEditDialog = (task: HelpdeskTask) => {
+    setEditTask(task);
+    setEditKategori(task.kategori || '');
+    setEditSolver(task.solver || '');
+    setEditKendala(task.kendala || '');
+    setEditEskalasi(task.eskalasi || '');
+    setEditStatusBima(task.statusBima || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTask) return;
+    setSaving(true);
+    try {
+      const isFinal = FINAL_STATUSES.includes(editStatusBima as StatusBima);
+      await onUpdateTask({
+        ...editTask,
+        kategori: editKategori,
+        solver: editSolver,
+        kendala: editKendala,
+        eskalasi: editEskalasi,
+        statusBima: editStatusBima,
+        taskStatus: isFinal ? 'completed' : 'pending',
+        updatedAt: new Date().toISOString(),
+      });
+      setEditTask(null);
+      
+      if (editKategori === 'Non Setting') {
+        toast.success('Order diupdate ke Non Setting — kembali ke Input Progress');
+      } else if (isFinal) {
+        toast.success('Order diupdate ke status final — pindah ke Status Final');
+      } else {
+        toast.success('Order berhasil diupdate!');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengupdate order');
+    } finally {
+      setSaving(false);
     }
   };
+
+  const solverGroups = useMemo(() => ({
+    ish: SOLVER_LIST.filter(s => s.startsWith('HD ISH')),
+    reg: SOLVER_LIST.filter(s => s.startsWith('HD REGULER')),
+  }), []);
 
   return (
     <div className="space-y-6">
@@ -83,7 +144,7 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Cari workorder, SC Order, kendala..."
+            placeholder="Cari workorder, SC Order, customer, solver..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -102,7 +163,6 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
           const colors = SEGMENT_COLORS[segment];
           const expectedAreas = AREA_MAPPING[segment] || [];
           
-          // Total task di segment ini
           let totalSegmentTasks = 0;
           expectedAreas.forEach(a => {
             totalSegmentTasks += (groupedByArea[a]?.length || 0);
@@ -124,17 +184,12 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
                   Belum ada mapping area untuk segmen ini
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="space-y-4">
                   {expectedAreas.map(area => {
                     const areaTasks = groupedByArea[area] || [];
-                    
-                    const compwork = areaTasks.filter(t => t.statusBima === 'COMPWORK').length;
-                    const wappr = areaTasks.filter(t => t.statusBima === 'WAPPR').length;
-                    const canclwork = areaTasks.filter(t => t.statusBima === 'CANCLWORK').length;
-                    const other = areaTasks.length - (compwork + wappr + canclwork);
 
                     return (
-                      <Card key={area} className="overflow-hidden hover:shadow-md transition-all border-l-4" style={{ borderLeftColor: colors.text }}>
+                      <Card key={area} className="overflow-hidden border-l-4" style={{ borderLeftColor: colors.text }}>
                         <CardHeader className="bg-slate-50 py-3 pb-2 flex flex-row items-center justify-between border-b">
                           <CardTitle className="text-lg font-bold">AREA {area}</CardTitle>
                           <Badge className="font-bold text-sm" variant={areaTasks.length > 0 ? "default" : "secondary"}>
@@ -147,64 +202,57 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
                               Tidak ada data
                             </div>
                           ) : (
-                            <div className="flex flex-col">
-                              {/* Summary Stats */}
-                              <div className="grid grid-cols-4 divide-x border-b bg-white">
-                                <div className="p-2 flex flex-col items-center justify-center text-center">
-                                  <span className="text-[10px] text-muted-foreground font-semibold mb-1">DONE</span>
-                                  <span className="text-green-600 font-bold text-sm flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3" /> {compwork}
-                                  </span>
-                                </div>
-                                <div className="p-2 flex flex-col items-center justify-center text-center">
-                                  <span className="text-[10px] text-muted-foreground font-semibold mb-1">WAPPR</span>
-                                  <span className="text-yellow-600 font-bold text-sm flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> {wappr}
-                                  </span>
-                                </div>
-                                <div className="p-2 flex flex-col items-center justify-center text-center">
-                                  <span className="text-[10px] text-muted-foreground font-semibold mb-1">CANCEL</span>
-                                  <span className="text-red-600 font-bold text-sm flex items-center gap-1">
-                                    <Ban className="w-3 h-3" /> {canclwork}
-                                  </span>
-                                </div>
-                                <div className="p-2 flex flex-col items-center justify-center text-center">
-                                  <span className="text-[10px] text-muted-foreground font-semibold mb-1">OTHER</span>
-                                  <span className="text-slate-600 font-bold text-sm flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" /> {other}
-                                  </span>
-                                </div>
-                              </div>
-                              
-                              {/* Task List Preview */}
-                              <div className="max-h-[200px] overflow-y-auto bg-slate-50 p-2 space-y-2">
-                                {areaTasks.map(task => (
-                                  <div key={task.id} className="bg-white p-2 rounded border text-xs flex flex-col gap-1.5 shadow-sm">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <span className="font-mono font-medium truncate" title={task.workorder}>
-                                        {task.workorder}
-                                      </span>
-                                      <Badge variant="outline" className={`text-[9px] px-1 py-0 h-4 border ${getStatusColor(task.statusBima || '')}`}>
-                                        {task.statusBima || 'PENDING'}
-                                      </Badge>
-                                    </div>
-                                    
-                                    <div className="text-muted-foreground flex items-center justify-between gap-1">
-                                      <span className="truncate max-w-[120px]" title={task.customerName}>{task.customerName}</span>
-                                      <span className="font-medium text-slate-700 truncate" title={task.solver}>
-                                        {task.solver?.replace('HD ISH - ', '').replace('HD REGULER - ', '') || '-'}
-                                      </span>
-                                    </div>
-                                    
-                                    {task.kendala && (
-                                      <div className="mt-1 pt-1 border-t text-[10px] text-slate-600 line-clamp-2" title={task.kendala}>
-                                        <span className="font-semibold mr-1">Kendala:</span> 
-                                        {task.kendala}
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
+                            <div className="overflow-auto">
+                              <Table>
+                                <TableHeader className="bg-slate-50">
+                                  <TableRow>
+                                    <TableHead className="w-10">No</TableHead>
+                                    <TableHead>Workorder</TableHead>
+                                    <TableHead>SC Order</TableHead>
+                                    <TableHead>Service No</TableHead>
+                                    <TableHead>Order Type</TableHead>
+                                    <TableHead>Status Filter</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>Workzone</TableHead>
+                                    <TableHead>Solver</TableHead>
+                                    <TableHead>Kendala</TableHead>
+                                    <TableHead>Status BIMA</TableHead>
+                                    <TableHead className="w-16">Aksi</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {areaTasks.map((task, i) => (
+                                    <TableRow key={task.id}>
+                                      <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                                      <TableCell className="font-mono text-xs">{task.workorder}</TableCell>
+                                      <TableCell className="font-mono text-xs">{task.scOrder}</TableCell>
+                                      <TableCell className="font-mono text-xs">{task.serviceNo}</TableCell>
+                                      <TableCell className="text-xs">{task.crmOrderType}</TableCell>
+                                      <TableCell className="text-xs">{task.filterStatus}</TableCell>
+                                      <TableCell className="text-xs max-w-[120px] truncate">{task.customerName}</TableCell>
+                                      <TableCell className="text-xs">{task.workzone}</TableCell>
+                                      <TableCell className="text-xs font-medium">
+                                        {task.solver?.replace('HD ISH - ', '').replace('HD REGULER - ', '') || '—'}
+                                      </TableCell>
+                                      <TableCell className="text-xs">{task.kendala || '—'}</TableCell>
+                                      <TableCell>
+                                        {task.statusBima ? (
+                                          <Badge variant="outline" className={`text-[9px] px-1 py-0 h-5 border ${getStatusBadgeColor(task.statusBima)}`}>
+                                            {task.statusBima}
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground">—</span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(task)}>
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
                             </div>
                           )}
                         </CardContent>
@@ -217,6 +265,108 @@ export function HelpdeskAreaPage({ tasks }: HelpdeskAreaPageProps) {
           );
         })}
       </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTask} onOpenChange={() => setEditTask(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5" /> Update Order Area
+            </DialogTitle>
+          </DialogHeader>
+          {editTask && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-lg text-xs">
+                <div><span className="text-muted-foreground">Workorder:</span> <span className="font-mono font-medium">{editTask.workorder}</span></div>
+                <div><span className="text-muted-foreground">SC Order:</span> <span className="font-mono font-medium">{editTask.scOrder}</span></div>
+                <div><span className="text-muted-foreground">Customer:</span> <span className="font-medium">{editTask.customerName}</span></div>
+                <div><span className="text-muted-foreground">Workzone:</span> <span className="font-medium">{editTask.workzone}</span></div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Kategori</Label>
+                <Select value={editKategori} onValueChange={v => setEditKategori(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Setting">Setting</SelectItem>
+                    <SelectItem value="Non Setting">Non Setting</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editKategori === 'Non Setting' && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Order akan pindah kembali ke Input Progress di segmen masing-masing
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Solver</Label>
+                <Select value={editSolver} onValueChange={setEditSolver}>
+                  <SelectTrigger>
+                    <Users className="w-4 h-4 mr-2" />
+                    <SelectValue placeholder="Pilih solver..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="px-2 py-1 text-xs font-bold text-muted-foreground">HD ISH</div>
+                    {solverGroups.ish.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    <div className="px-2 py-1 text-xs font-bold text-muted-foreground mt-1">HD REGULER</div>
+                    {solverGroups.reg.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Kendala</Label>
+                <Input value={editKendala} onChange={e => setEditKendala(e.target.value)} placeholder="Masukkan kendala" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Eskalasi</Label>
+                <Select value={editEskalasi} onValueChange={setEditEskalasi}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih eskalasi..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ESKALASI_OPTIONS.map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status BIMA</Label>
+                <Select value={editStatusBima} onValueChange={v => setEditStatusBima(v as StatusBima)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_BIMA_OPTIONS.map(s => (
+                      <SelectItem key={s} value={s}>{s} - {getStatusLabel(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editStatusBima && FINAL_STATUSES.includes(editStatusBima as StatusBima) && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    Status final — order akan pindah ke Status Final
+                  </p>
+                )}
+              </div>
+
+              <Button className="w-full" onClick={handleSaveEdit} disabled={saving}>
+                {saving
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</>
+                  : <><CheckCircle className="w-4 h-4 mr-2" />Simpan Perubahan</>
+                }
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

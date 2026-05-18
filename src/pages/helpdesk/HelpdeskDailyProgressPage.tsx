@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
-import { getStatusLabel } from '@/types/helpdesk';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { AdminData, HelpdeskData, HelpdeskTask, StatusBima } from '@/types/helpdesk';
+import { getStatusLabel, STATUS_BIMA_OPTIONS } from '@/types/helpdesk';
 import {
   CalendarDays,
   CheckCircle,
@@ -33,6 +34,8 @@ interface DailyProgressPageProps {
 
 const getStatusColor = (status: string) => {
   switch (status) {
+    case 'STARWORK':
+      return 'bg-cyan-500';
     case 'COMPWORK':
       return 'bg-green-500';
     case 'WAPPR':
@@ -105,6 +108,7 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData, tasks }: Da
   const [copied, setCopied] = useState(false);
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
   const [selectedDate, setSelectedDate] = useState<string>(getTodayWIB());
+  const [statusDetailDialog, setStatusDetailDialog] = useState<string | null>(null);
 
   const today = getTodayWIB();
 
@@ -475,12 +479,14 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData, tasks }: Da
                       <TableCell className="truncate" title={item.kategori}>{item.kategori}</TableCell>
                       <TableCell className="truncate" title={item.eskalasi}>{item.eskalasi}</TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(item.statusBima)}>
-                          {item.statusBima}
-                        </Badge>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          {getStatusLabel(item.statusBima)}
-                        </div>
+                        <button onClick={() => setStatusDetailDialog(item.statusBima)} className="cursor-pointer">
+                          <Badge className={getStatusColor(item.statusBima)}>
+                            {item.statusBima}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {getStatusLabel(item.statusBima)}
+                          </div>
+                        </button>
                       </TableCell>
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-1">
@@ -628,6 +634,52 @@ export function HelpdeskDailyProgressPage({ adminData, helpdeskData, tasks }: Da
           )}
         </CardContent>
       </Card>
+
+      {/* Status Detail Dialog */}
+      <Dialog open={statusDetailDialog !== null} onOpenChange={() => setStatusDetailDialog(null)}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Status: <Badge className={getStatusColor(statusDetailDialog || '')}>{statusDetailDialog}</Badge>
+              <span className="text-sm text-muted-foreground">— {todayData.filter(d => d.statusBima === statusDetailDialog).length} order</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto flex-1 border rounded-lg">
+            <Table>
+              <TableHeader className="sticky top-0 bg-white z-10">
+                <TableRow>
+                  <TableHead className="w-10">No</TableHead>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Inet</TableHead>
+                  <TableHead>SC ORDER</TableHead>
+                  <TableHead>Kendala</TableHead>
+                  <TableHead>Kategori</TableHead>
+                  <TableHead>Eskalasi</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Jam</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {todayData.filter(d => d.statusBima === statusDetailDialog).map((item, idx) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell className="font-medium text-primary">{item.namaInput || '-'}</TableCell>
+                    <TableCell className="font-mono text-xs">{item.inet}</TableCell>
+                    <TableCell className="font-mono text-xs">{item.scOrder}</TableCell>
+                    <TableCell className="text-xs">{item.kendala || '-'}</TableCell>
+                    <TableCell className="text-xs">{item.kategori || '-'}</TableCell>
+                    <TableCell className="text-xs">{item.eskalasi || '-'}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(item.statusBima)}>{item.statusBima}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{formatTimeWIB(item.createdAt)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

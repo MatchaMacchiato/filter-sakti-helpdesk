@@ -10,6 +10,8 @@ import { HelpdeskSiswaPage } from '@/pages/helpdesk/HelpdeskSiswaPage';
 import { HelpdeskDailyProgressPage } from '@/pages/helpdesk/HelpdeskDailyProgressPage';
 import { HelpdeskProgressDashboard } from '@/pages/helpdesk/HelpdeskProgressDashboard';
 import { HelpdeskAreaPage } from '@/pages/helpdesk/HelpdeskAreaPage';
+import { HelpdeskStatusFinalPage } from '@/pages/helpdesk/HelpdeskStatusFinalPage';
+import { HelpdeskEskalasiPage } from '@/pages/helpdesk/HelpdeskEskalasiPage';
 import type { AdminData, HelpdeskData, HelpdeskTask } from '@/types/helpdesk';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -229,7 +231,6 @@ export function HelpdeskApp() {
             element={
               <HelpdeskProgressDashboard 
                 progressData={tasks}
-                onDeleteBatch={handleDeleteBatch}
               />
             } 
           />
@@ -237,6 +238,23 @@ export function HelpdeskApp() {
             path="/area" 
             element={
               <HelpdeskAreaPage 
+                tasks={tasks}
+                onUpdateTask={handleUpdateTask}
+              />
+            } 
+          />
+          <Route 
+            path="/status-final" 
+            element={
+              <HelpdeskStatusFinalPage 
+                tasks={tasks}
+              />
+            } 
+          />
+          <Route 
+            path="/eskalasi" 
+            element={
+              <HelpdeskEskalasiPage 
                 tasks={tasks}
               />
             } 

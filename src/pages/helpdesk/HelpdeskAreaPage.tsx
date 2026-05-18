@@ -227,7 +227,7 @@ export function HelpdeskAreaPage({ tasks, onUpdateTask, onDeleteTask }: Helpdesk
                               </div>
                             ) : (
                               <div className="overflow-auto">
-                                <Table>
+                                <Table className="min-w-[1200px]">
                                   <TableHeader className="bg-slate-50">
                                     <TableRow>
                                       <TableHead className="w-10">No</TableHead>

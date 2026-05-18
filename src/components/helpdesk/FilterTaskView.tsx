@@ -402,7 +402,7 @@ export function FilterTaskView({ tasks, onImportTasks, onUpdateTask, onDeleteTas
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-auto max-h-[400px] rounded-md border">
-                      <Table className="min-w-max">
+                      <Table className="min-w-[1200px]">
                         <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                           <TableRow>
                             <TableHead className="w-10">No</TableHead>
